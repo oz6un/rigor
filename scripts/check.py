@@ -14,6 +14,14 @@ leftover = re.compile(r"\b(cursor|poteto|pstack|grok|sicko)\b", re.I)
 problems = []
 
 
+def slug(heading):
+    return re.sub(r"\s+", "-", re.sub(r"[^\w\s-]", "", heading.strip().lower()))
+
+
+def anchors(path):
+    return {slug(h) for h in re.findall(r"^#+ (.+)$", path.read_text(), re.M)}
+
+
 def frontmatter(text):
     m = re.match(r"---\n(.*?)\n---\n", text, re.S)
     return dict(re.findall(r"^([a-z-]+): *(.*)$", m.group(1), re.M)) if m else {}
@@ -39,20 +47,34 @@ for path in docs:
     for m in re.finditer(r"the `([a-z0-9-]+)` skill", text):
         if m.group(1) not in skill_names:
             problems.append(f"{rel}: unknown skill {m.group(1)}")
-    for m in re.finditer(r"\]\(([^)#:\s]+)(?:#[^)]*)?\)", text):
-        if re.search(r"[./]", m.group(1)) and not (path.parent / m.group(1)).exists():
+    for m in re.finditer(r"\]\(([^)#:\s]*)(?:#([^)\s]+))?\)", text):
+        target = path.parent / m.group(1) if m.group(1) else path
+        if m.group(1) and not re.search(r"[./]", m.group(1)):
+            continue
+        if not target.exists():
             problems.append(f"{rel}: broken link {m.group(1)}")
+        elif m.group(2) and target.suffix == ".md" and m.group(2) not in anchors(target):
+            problems.append(f"{rel}: broken anchor {m.group(1)}#{m.group(2)}")
+    skill_dir = skills / rel.parts[1] if rel.parts[0] == "skills" else None
+    for placeholder, base in (("<this skill's dir>/", skill_dir), ("<rigor skill dir>/", skills / "rigor")):
+        for m in re.finditer(re.escape(placeholder) + r"([\w./-]+)", text):
+            if base is None or not (base / m.group(1)).resolve().exists():
+                problems.append(f"{rel}: script path {placeholder}{m.group(1)} doesn't exist")
     if rel.parts[0] != "README.md":
         for n, line in enumerate(text.splitlines(), 1):
             if leftover.search(line):
                 problems.append(f"{rel}:{n}: leftover term: {line.strip()[:80]}")
 
-rigor_index = set(re.findall(r"^- `([a-z0-9-]+)`:", (skills / "rigor" / "SKILL.md").read_text(), re.M))
-principles_index = set(re.findall(r"^- \[[^\]]+\]\(([a-z0-9-]+)\.md\)", (skills / "principles" / "SKILL.md").read_text(), re.M))
+rigor_section = re.search(r"^## Principles\n(.*?)^## ", (skills / "rigor" / "SKILL.md").read_text(), re.S | re.M).group(1)
+rigor_index = dict(re.findall(r"^- `([a-z0-9-]+)`: (.*)$", rigor_section, re.M))
+principles_index = dict(re.findall(r"^- \[`?([a-z0-9-]+)`?\]\([a-z0-9-]+\.md\): (.*)$", (skills / "principles" / "SKILL.md").read_text(), re.M))
 for label, index in (("rigor/SKILL.md", rigor_index), ("principles/SKILL.md", principles_index)):
-    if index != principles:
+    if set(index) != principles:
         problems.append(f"{label} principle index differs from files: "
-                        f"missing {sorted(principles - index)}, extra {sorted(index - principles)}")
+                        f"missing {sorted(principles - set(index))}, extra {sorted(set(index) - principles)}")
+for name in sorted(set(rigor_index) & set(principles_index)):
+    if rigor_index[name] != principles_index[name]:
+        problems.append(f"principle {name}: summary differs between rigor/SKILL.md and principles/SKILL.md")
 
 for md in sorted((root / "agents").glob("*.md")):
     toml = root / "codex" / "agents" / f"{md.stem}.toml"
@@ -62,10 +84,16 @@ for md in sorted((root / "agents").glob("*.md")):
     md_text, toml_text = md.read_text(), toml.read_text()
     body = re.search(r"developer_instructions = ('''|\"\"\")\n(.*?)\1", toml_text, re.S)
     desc = re.search(r'^description = "(.*)"$', toml_text, re.M)
+    if not re.search(rf'^name = "{md.stem}"$', toml_text, re.M) or frontmatter(md_text).get("name") != md.stem:
+        problems.append(f"agents/{md.stem}: name must equal the file name in both agents/ and codex/agents/")
     if not body or body.group(2).strip() != md_text.split("---\n", 2)[2].strip():
         problems.append(f"codex/agents/{toml.name}: instructions differ from agents/{md.name}")
     if not desc or desc.group(1) != frontmatter(md_text).get("description"):
         problems.append(f"codex/agents/{toml.name}: description differs from agents/{md.name}")
+
+for toml in sorted((root / "codex" / "agents").glob("*.toml")):
+    if not (root / "agents" / f"{toml.stem}.md").exists():
+        problems.append(f"codex/agents/{toml.name}: no agents/{toml.stem}.md")
 
 readme_skills = set(re.findall(r"^\| `([a-z0-9-]+)` \|", (root / "README.md").read_text(), re.M))
 if readme_skills != skill_names:

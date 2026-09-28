@@ -113,7 +113,7 @@ See [docs/guide](docs/guide/README.md) for a longer walkthrough.
 
 ## Subagents
 
-- `rigor-agent` works on a step of a rigor playbook. It reads `rigor` and the principles before starting.
+- `rigor-agent` works on a step of a rigor playbook. It reads `rigor` (which includes the principle index) before starting.
 - `comment-reviewer` is a read-only reviewer that flags unnecessary comments. `no-comments` runs it.
 
 ## Repository layout
@@ -131,7 +131,7 @@ docs/guide/            Walkthrough
 ## Development
 
 - `python3 scripts/check.py` checks skill frontmatter, links between skills, playbooks and principles, that the two principle indexes, the Claude Code and Codex agent files, the README skills table, and the manifest versions all agree.
-- `scripts/reinstall.sh` runs the check, bumps the patch version, and refreshes the installed plugin in Claude Code and Codex. Both hosts cache the plugin by version, so edits don't show up until the version changes.
+- `scripts/reinstall.sh` runs the check, bumps the patch version, and refreshes the installed plugin in each host whose `mstack` marketplace was added from this clone (`claude plugin marketplace add <path>`, `codex plugin marketplace add <path>`). Both hosts cache the plugin by version, so edits don't show up until the version changes. Hosts installed from GitHub pick up changes after you push and update the marketplace.
 
 ## License
 

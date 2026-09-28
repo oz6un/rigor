@@ -9,7 +9,7 @@ Keep one decision log per effort.
 
 ## Format
 
-A single TSV file with one row per decision. Every cell is one line, and evidence is a pointer, not prose. Start a log by copying `references/decision-log-template.tsv` (the header row), or let `scripts/log.sh` create it.
+A single TSV file with one row per decision. Every cell is one line, and evidence is a pointer, not prose. Start a log by copying `references/decision-log-template.tsv` (the header row), or let `<this skill's dir>/scripts/log.sh` create it.
 
 | Column | Contents |
 |---|---|
@@ -35,7 +35,7 @@ ts	phase	decision	why	evidence	result
 Write each row the way you'd tell a teammate what you did: plain words and concrete actions (the `unslop` skill applies to log text too).
 
 ```bash
-scripts/log.sh <logfile> <phase> <decision> <why> <evidence> <result>
+<this skill's dir>/scripts/log.sh <logfile> <phase> <decision> <why> <evidence> <result>
 ```
 
 The script stamps `ts`, writes the header on first use, replaces tabs and newlines inside cells with spaces, and prefixes any cell that starts with `=`, `+`, `-`, or `@` with a single quote so spreadsheets don't evaluate it as a formula. Appending with `printf` also works, but handle the same characters yourself when cells contain generated or user-supplied text.
@@ -75,7 +75,7 @@ Fix the log by adding rows, never by editing. When a row records something that 
 
 ## Review by another model
 
-Before handing back, have a model other than the one that did the work review the log. Self-review doesn't substitute. Run the review through `../rigor/scripts/second-opinion.sh`, read-only, giving it the log path and the transcript path. The reviewer doesn't redo the work; it scans for what the user should look at:
+Before handing back, have a model other than the one that did the work review the log. Self-review doesn't substitute. Run the review through `<this skill's dir>/../rigor/scripts/second-opinion.sh`, read-only, giving it the log path and the transcript path. The reviewer doesn't redo the work; it scans for what the user should look at:
 
 - Decisions with weak or missing evidence.
 - Verification that was skipped, or claimed without proof in the transcript.

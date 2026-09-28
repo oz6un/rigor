@@ -7,7 +7,7 @@ You own the plan, not the code. The plan is a checklist that an owner works thro
 3. Explore with `rigor-agent` subagents, choosing the model per the rigor skill's "Subagents and models" section (the `guard-the-context-window` principle). Each returns file pointers, conventions, test commands, and entry points, not pasted file contents.
 4. Copy the skeleton below into the plan file and fill every placeholder. Unless the user names a path, write it to `~/.mstack/plans/<program-slug>.md`. Keep every heading and sub-block in the order shown, with one section per PR. One PR is one change with its own evidence (the `sequence-verifiable-units` principle). Name the execution playbook in **How to read this**: choose between `playbooks/autopilot-full.md` and `playbooks/autopilot-stack.md` using the rule at the top of `playbooks/autopilot-stack.md`, or use `playbooks/orchestrate.md` for a standing program.
 5. Write it following `technical-writing`, then run `unslop` over it. The body is a how-to; the appendices hold explanation and reference. Each heading states the task or the finding. The check script rejects curly quotes.
-6. Run `node scripts/check-plan.mjs <plan.md>` from the rigor skill's directory and fix every line it prints (the `encode-lessons-in-structure` principle).
+6. Run `node <rigor skill dir>/scripts/check-plan.mjs <plan.md>` and fix every line it prints (the `encode-lessons-in-structure` principle).
 7. Hand back the plan path and the script's output, then stop. Execution starts on the user's explicit go, under the playbook the plan names.
 
 ## Rules the skeleton encodes
@@ -69,7 +69,7 @@ Tests alone are not sufficient verification. A PR is verified only when its unit
 - [ ] Run the repo's lint and typecheck once before the PR-facing push. Push with hooks on.
 - [ ] Run `deslop` before each commit and `no-comments` before review.
 - [ ] Triage every automated reviewer comment per the rigor skill's `references/review-bot-triage.md`.
-- [ ] Rebase onto current trunk before the code-ready report and babysit. Keep that merge base in fix rounds. Rebase again only at merge prep, on a `git merge-tree` conflict with trunk, or on a CI failure that comes from a change on trunk.
+- [ ] Rebase onto current trunk before the code-ready report and babysit (Autopilot (stack) owners skip this; the root reshapes the stack). Keep that merge base in fix rounds. Rebase again only at merge prep, on a `git merge-tree` conflict with trunk, or on a CI failure that comes from a change on trunk.
 
 ### Verdict and merge, for every PR
 

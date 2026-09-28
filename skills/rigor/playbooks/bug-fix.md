@@ -1,6 +1,6 @@
 # Bug fix
 
-You own the task: plan, review, and verify. Delegate the investigation and the fix to subagents and stay in the lead.
+You own the task: plan, review, and verify. Delegate the investigation and the fix to subagents and stay in the lead, except for small tasks as defined in `SKILL.md`.
 
 Every line you ship should trace to runtime evidence. A defensive change that "might help" is a hypothesis, not a fix, and doesn't ship. When evidence refutes a hypothesis, revert whatever it motivated. Ship the smallest change the evidence justifies.
 

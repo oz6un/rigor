@@ -23,7 +23,7 @@ Split the question into two to four exploration angles, each a distinct slice of
 - In Claude Code, use the `Explore` agent, or `general-purpose` on a fast model.
 - In Codex, spawn subagents with `sandbox_mode = "read-only"` on a fast model.
 
-For a cross-model check, run one of the angles through `../rigor/scripts/second-opinion.sh` instead of a host subagent.
+For a cross-model check, run one of the angles through `<this skill's dir>/../rigor/scripts/second-opinion.sh` instead of a host subagent.
 
 Then go to step 3.
 

@@ -17,13 +17,13 @@ The [shared program rules](#shared-program-rules) at the end of this file (opera
 - **Coordinator (this session).** Frames the program, writes briefs, drains the inbox, writes the user's reports, and makes judgment calls. It doesn't write or edit code: conflicted merges, restacks, and code changes are all tasks for workers. On repos where local git is cheap it may land verified work itself (fast-forward or clean cherry-pick, then push), so verified units don't queue behind a busy stacker. It reads and writes state only through `orch` (see [Store](#store)) at drain points; `orch` never spawns, waits, or wakes anything.
 - **Sub-coordinator.** One per track, and only when the program is larger than one coordinator's drains can handle. Each extra layer pays its own orientation cost, and a blocking sub-coordinator hides its children while the parent idles. It owns its track's units, writes its workers' briefs, spawns its workers and verifiers, and reports aggregates at wave boundaries, not raw child reports. It keeps at most about ten children in flight as a rolling window.
   - Nesting depends on the host. If subagents can't spawn their own subagents, run each sub-coordinator as its own top-level `claude` or `codex` session in its own worktree, or have the coordinator absorb the track.
-- **Worker and verifier.** Each writes in its own worktree or branch, one writer per worktree or branch (the `separate-before-serializing-shared-state` principle). Set it up as the `arena` skill's [Isolating candidates](../../arena/SKILL.md#isolating-candidates) describes and name it in the brief. Prefer fewer, broader workers. Run a unit's verifier on a different model from its worker (another host model, or the other CLI via `scripts/second-opinion.sh`).
+- **Worker and verifier.** Each writes in its own worktree or branch, one writer per worktree or branch (the `separate-before-serializing-shared-state` principle). In Claude Code, spawn with `isolation: "worktree"`; in Codex, create the worktree with `git worktree add` and name it in the brief. Prefer fewer, broader workers. Run a unit's verifier on a different model from its worker (another host model, or the other CLI via `<rigor skill dir>/scripts/second-opinion.sh`).
 
 Keep the depth at coordinator, track, worker. Choose tracks per project; build, landing, and verification are common splits.
 
 ## Store
 
-Create the store outside the repo, for example `~/.mstack/orchestrate/<project-slug>/`, and export `ORCH_STORE` to it. Every file has one writer. Do bookkeeping with `bun scripts/orch/orch.ts` from the rigor skill's directory (written `orch` below); its TSV and JSON stay readable without it.
+Create the store outside the repo, for example `~/.mstack/orchestrate/<project-slug>/`, and export `ORCH_STORE` to it. Every file has one writer. Do bookkeeping with `bun <rigor skill dir>/scripts/orch/orch.ts` from the rigor skill's directory (written `orch` below); its TSV and JSON stay readable without it.
 
 | File | Contents |
 |---|---|

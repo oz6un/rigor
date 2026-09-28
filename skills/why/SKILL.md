@@ -87,7 +87,7 @@ Spawn one synthesizer on your strongest model, again with MCP access so it can s
 4. `references/epistemics.md`
 5. The prompt in `references/synthesizer-prompt.md`
 
-For a contested or high-stakes answer, get a cross-model check: send the synthesis, the code anchor, and `references/epistemics.md` to `../rigor/scripts/second-opinion.sh` and ask it to find claims whose tier is higher than the cited evidence supports. Move any claim it successfully challenges down a tier.
+For a contested or high-stakes answer, get a cross-model check: send the synthesis, the code anchor, and `references/epistemics.md` to `<this skill's dir>/../rigor/scripts/second-opinion.sh` and ask it to find claims whose tier is higher than the cited evidence supports. Move any claim it successfully challenges down a tier.
 
 ## 5. Present
 

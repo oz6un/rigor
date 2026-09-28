@@ -33,7 +33,7 @@ The rules serve the reader. If following one makes a sentence worse, fix the sen
 
 **Invented jargon.** Don't coin a term where a plain phrase works ("several parallel attempts", not "a gauntlet"). If a coined term is worth keeping, define it the first time and use it the same way every time after.
 
-**Synonym cycling.** Calling one thing "the gate", "the check", and "the budget script" in one doc makes the reader think there are three things. Pick one name and repeat it. Use the real symbol, file, flag, or command name when there is one.
+**Synonym cycling.** Calling one thing "the gate", "the check", and "the budget script" in one doc makes the reader think there are three things. Pick one name and repeat it, and likewise one verb per action (not "start" in one place and "initiate" in another). Use the real symbol, file, flag, or command name when there is one.
 
 **Adverbs propping up verbs.** "Runs quickly" becomes "is fast" or the measured number. "Significantly improves" becomes the measured delta. If a verb needs an adverb, look for a better verb.
 

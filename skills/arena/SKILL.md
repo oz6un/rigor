@@ -11,13 +11,13 @@ Start a todo list with one item per phase before launching anything: Frame, Fan 
 
 ## Phase A: Frame
 
-Every candidate gets the same prompt, so the prompt is the contract. Host candidates may add one direction line each to spread the attempts, since they share a model.
+Every candidate gets the same prompt, so the prompt is the contract. The one exception is a direction line when the arena explores several design directions (step 3).
 
 1. State the artifact each candidate produces.
 2. Write the rubric: what success looks like for this task, as 3-6 concrete criteria you can score. The rubric is for you and the judge in Phases C and D. Candidates only see the task.
 3. Choose the panel. The default is three candidates:
    - Two or more host subagents on your strongest model. Give each the identical prompt when the work is generation-bound. When the arena should explore several design directions, add one candidate per direction and name the direction in its prompt.
-   - One candidate from the other CLI, run through `../rigor/scripts/second-opinion.sh`. A different model family is the main source of real diversity, so keep this seat whenever the other CLI is installed.
+   - One candidate from the other CLI, run through `<this skill's dir>/../rigor/scripts/second-opinion.sh`. A different model family is the main source of real diversity, so keep this seat whenever the other CLI is installed.
 4. Give each candidate its own output location so no two attempts share state (the `separate-before-serializing-shared-state` principle). See [Isolating candidates](#isolating-candidates).
 
 ## Phase B: Fan out
@@ -28,14 +28,14 @@ Launch all candidates at once and let them run in parallel. Each prompt includes
 - The other CLI: write the prompt to a file and run the script in the background, capturing stdout to the candidate's output location:
 
   ```bash
-  ../rigor/scripts/second-opinion.sh --write --cd "$wt" < prompt.txt > "$out/candidate-3.md" 2>&1
+  <this skill's dir>/../rigor/scripts/second-opinion.sh --write --cd "$wt" < prompt.txt > "$out/candidate-3.md"
   ```
 
-  Drop `--write --cd` for a candidate that only returns text (a written design, a plan); its final message is the artifact.
+  Drop `--write --cd` for a candidate that only returns text (a written design, a plan); its final message is the artifact. If the script exits 3, the other CLI isn't installed: start a host candidate for that seat instead (not a dropout) and note it in the synthesis record.
 
 If a candidate produces nothing usable, continue with N-1 and record the dropout.
 
-Arena candidates leave their changes uncommitted, because the other CLI's sandbox may not be able to write the repo's `.git`.
+Tell each candidate to leave its changes uncommitted, because the other CLI's sandbox may not be able to write the repo's `.git`.
 
 ### Isolating candidates
 
@@ -56,7 +56,7 @@ For text artifacts, use `/tmp/arena-<slug>/candidate-<n>/`. When the arena is do
 
 ## Phase C: Cross-judge
 
-After every candidate has finished, get one independent judge from a different model family than yours: run it through `../rigor/scripts/second-opinion.sh` (read-only, the default). Give it the rubric and the candidates by path label. It scores each criterion per candidate and recommends a base with reasons. It runs while you do your own reading in Phase D. Don't start it while candidates are still writing.
+After every candidate has finished, get one independent judge from a different model family than yours: run it through `<this skill's dir>/../rigor/scripts/second-opinion.sh` (read-only, the default). Give it the rubric and the candidates by path label. It scores each criterion per candidate and recommends a base with reasons. It runs while you do your own reading in Phase D. Don't start it while candidates are still writing.
 
 If the other CLI isn't installed, the judge is a read-only host subagent (Claude Code `Explore`; Codex `sandbox_mode = "read-only"`); note that it shares your model family.
 

@@ -16,7 +16,7 @@ Start a todo list with one item per phase before launching anything: Frame, Fan 
 3. Set N from the user's request or derive it from the shape. N is the total number of workers.
 4. Assign workers:
    - Most workers are host subagents. Use a fast model for mechanical checks and your strongest model for judgment-heavy slices (Claude Code: the Agent tool's `model`; Codex: `model` on the spawn).
-   - Run at least one worker through the other CLI with `../rigor/scripts/second-opinion.sh`. In a race, make it one arm. In a coverage swarm, give it one slice, or have it independently re-check a slice a host worker also covers, so the report includes a cross-model check.
+   - Run at least one worker through the other CLI with `<this skill's dir>/../rigor/scripts/second-opinion.sh`. In a race, make it one arm. In a coverage swarm, give it one slice, or have it independently re-check a slice a host worker also covers, so the report includes a cross-model check.
    - For a model race, name each arm's model up front.
 5. Give every worker that writes its own worktree, set up as in the `arena` skill's [Isolating candidates](../arena/SKILL.md#isolating-candidates), with branch `swarm/<slug>/<n>` at `../swarm-<slug>-<n>`.
 6. When workers verify or measure commits, each brief names the exact SHAs. A measurement brief also names the method: the sample count, what one sample is, and the run order. The worker records both in its result.

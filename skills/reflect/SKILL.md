@@ -35,7 +35,7 @@ Each reviewer's prompt is its lens file followed by [`references/reviewer-rules.
 | Lens | Prompt | Runs on |
 |---|---|---|
 | Judgment | [`references/judgment-reviewer.md`](references/judgment-reviewer.md) | Host subagent, strongest model |
-| Tooling | [`references/tooling-reviewer.md`](references/tooling-reviewer.md) | The other CLI, through `../rigor/scripts/second-opinion.sh` |
+| Tooling | [`references/tooling-reviewer.md`](references/tooling-reviewer.md) | The other CLI, through `<this skill's dir>/../rigor/scripts/second-opinion.sh` |
 | Divergent | [`references/divergent-reviewer.md`](references/divergent-reviewer.md) | Host subagent, strongest model |
 
 - Host reviewers need to read code and use MCP tools (ticket trackers, chat, observability) to look up context the transcript references, so don't restrict them to a read-only agent type. Their prompt tells them not to edit files. In Claude Code, use a `general-purpose` agent; in Codex, the default agent.

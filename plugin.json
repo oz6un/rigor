@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "mstack",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Rigorous engineering workflows for coding agents: playbooks, principles, multi-model review, and verification. Ported from pstack.",
   "author": {
     "name": "oz6un"

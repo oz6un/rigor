@@ -17,7 +17,7 @@ Once invoked, rigor stays on for the rest of the session. Apply it to each new t
 4. Work through the steps, calling the supporting skills below when a step needs them.
 5. Finish with a reply written per [Writing the reply](#writing-the-reply).
 
-Scale the process to the task. When the change is a few lines in one or two files and the approach is obvious (for a bug, the cause is confirmed by a reproduction), do it yourself: mark delegation, `how`, `why`, `architect`, and design-panel steps `skip: small task` rather than running them for show. Delegation exists so someone other than the author checks the code, so a small change you write yourself still needs a before/after runtime check or test; without one, have a read-only subagent review the diff. Reproduction, verification, and independent verifiers (Shipping, verification rounds) are never skipped for size. Never mark a step done, or report it done, unless it happened.
+Scale the process to the task. When the change is a few lines in one or two files and the approach is obvious (for a bug, the cause is confirmed by a reproduction), do it yourself: mark delegation, `how`, `why`, `architect`, and `arena` steps `skip: small task` rather than running them for show. Delegation exists so someone other than the author checks the code, so a small change you write yourself still needs a before/after runtime check or test. When the change can't be checked at runtime (docs, config, prompts), have a read-only subagent review the diff instead. Reproduction, verification, and independent verifiers (Shipping, verification rounds) are never skipped for size. Never mark a step done, or report it done, unless it happened.
 
 In the reply, name each principle that changed a decision and what it changed. Only cite principles whose file you read in this session.
 
@@ -118,14 +118,14 @@ Defaults for every subagent:
 - Pass file paths, not pasted file contents.
 - Match the model to the job. The hardest changes (cross-cutting design, tricky concurrency, subtle algorithms) go to your strongest model. Mechanical edits can go to a faster, cheaper model. In Claude Code, set the Agent tool's `model`; in Codex, set `model` and `model_reasoning_effort` on the spawn.
 
-**Second opinions from another model.** A second opinion is the same prompt run against a different model, and agreement between them is a strong signal. Get one from the other CLI with the `second-opinion.sh` script in this skill's `scripts/` directory (other skills refer to it as `../rigor/scripts/second-opinion.sh`; resolve it to an absolute path from the skill's base directory before running it from the repo): from Claude Code it runs `codex exec`, from Codex it runs `claude -p`, read-only by default.
+**Second opinions from another model.** A second opinion is the same prompt run against a different model, and agreement between them is a strong signal. Get one from the other CLI with the `second-opinion.sh` script in this skill's `scripts/` directory (other skills call it as `<this skill's dir>/../rigor/scripts/second-opinion.sh`). Run every skill script by an absolute path built from the skill's base directory, never relative to the repo you're working in: from Claude Code it runs `codex exec`, from Codex it runs `claude -p`, read-only by default.
 
 ```bash
-scripts/second-opinion.sh < prompt.txt          # read-only review
-scripts/second-opinion.sh --write < prompt.txt  # allow edits (use a separate worktree)
+<rigor skill dir>/scripts/second-opinion.sh < prompt.txt          # read-only review
+<rigor skill dir>/scripts/second-opinion.sh --write < prompt.txt  # allow edits (use a separate worktree)
 ```
 
-Exit code 3 means the other CLI isn't installed. Fall back to a host subagent with a different lens and say so in the report. `MSTACK_CODEX_MODEL` and `MSTACK_CLAUDE_MODEL` override the models it uses.
+Exit code 3 means the other CLI isn't installed: run that seat as a host subagent and say so in the report (a skill may add specifics, such as interrogate's reviewer without a focus line). `MSTACK_CODEX_MODEL` and `MSTACK_CLAUDE_MODEL` override the models it uses.
 
 You own every subagent's work. Read the diff yourself and write your own summary instead of relaying the subagent's. If a subagent was interrupted and resumed, its later instructions can get lost, so start a fresh subagent with the consolidated scope instead of trusting its "done".
 
