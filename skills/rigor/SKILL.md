@@ -67,6 +67,9 @@ Delegate only large, independent tracks of work, such as a wide investigation or
 
 For a second opinion from another model family, pipe a prompt to `<rigor skill dir>/scripts/second-opinion.sh` (Claude Code calls `codex exec`, Codex calls `claude -p`; `--help` for options). Treat another reviewer's findings as hypotheses: act on one when you can reproduce it or it comes with a failing test.
 
-## Reply
+## Before you report done
 
-Lead with what changed for the user, then the choices and anything left open. Write it per the `unslop` skill. End with the PR link when there is one.
+Slop is the most common way good work gets rejected, so cut it before anyone else sees it:
+
+- Reread your diff as its reviewer and delete what doesn't earn its place: comments that restate the code, defensive checks on trusted paths, options and abstractions nothing asked for, unrelated edits, debug output. The `deslop` skill has the full list; read it for any change beyond a few lines.
+- Write the reply per the `unslop` skill. Lead with what changed for the user, then the choices and anything left open. Use plain sentences; add headers, bold, or bullets only when the reader needs them to scan. Don't recap what you already said. End with the PR link when there is one.
