@@ -1,6 +1,6 @@
 ---
 name: figure-it-out
-description: Design an auditable workflow for a task no narrower playbook fits, such as a large migration, an ambitious multi-part change, or work the user will review after stepping away. Scales rigor to the stakes, runs a hypothesis-and-measure loop, and keeps a decision log with show-me-your-work. Use for /figure-it-out or when no rigor playbook applies.
+description: Design an auditable workflow for a task no narrower playbook fits, such as a large migration or an ambitious multi-part change. Scales rigor to the stakes, runs a hypothesis-and-measure loop, and keeps a decision log with show-me-your-work. Use for /figure-it-out or when no rigor playbook applies.
 disable-model-invocation: true
 ---
 

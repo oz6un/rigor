@@ -38,7 +38,7 @@ For sustained work on one number, use the Hillclimb playbook: give it the metric
 
 With the bug already in context, that's enough. [`/tdd`](../../skills/tdd/SKILL.md) writes the smallest test that fails for the right reason, then the fix, then reruns it. If a test would need heavy setup or brittle mocks, it says so and uses the closest real command instead, which is often stronger evidence.
 
-[`typescript-best-practices`](../../skills/typescript-best-practices/SKILL.md) loads on its own when the agent edits `.ts` or `.tsx` files.
+Type [`/typescript-best-practices`](../../skills/typescript-best-practices/SKILL.md) when working in TypeScript; it doesn't load on its own.
 
 ## Clean before committing
 

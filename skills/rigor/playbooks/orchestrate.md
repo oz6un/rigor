@@ -74,7 +74,7 @@ STANDING     <preferences.md pasted verbatim>
 ## Queue and drain
 
 - When a subagent finishes, run `orch inbox push <agent> <unit> <status> [--report PATH]` and go back to what you were doing. Don't review its work inline; if it needs review, that's a verifier unit.
-- Drain in batches at four points: after finishing a critical section, at a track rollup, when a frontier watcher wakes you (always with a long heartbeat fallback, in case the watcher dies silently), and before a report to the user. Start each batch with `orch inbox drain`. Anything that arrives during a drain waits for the next one.
+- Drain in batches at four points: after finishing a critical section, at a track rollup, when a frontier watcher wakes you (the `/goal` check-ins cover a watcher that dies silently), and before a report to the user. Start each batch with `orch inbox drain`. Anything that arrives during a drain waits for the next one.
 - Critical sections you finish before draining: writing a brief, a stack operation, a conflict decision, writing a gate, updating the ledger or frontier.
 - In each drain, classify every pointer (landed, needs-verify, failed, zombie, noise), record the results with `orch unit add`, `orch unit set`, and `orch ledger record`, run `orch status`, then spawn the next wave in one message.
 - At each rollup, account for every spawned child: arrived, respawned, or scope explicitly absorbed. Quietly redoing a missing child's work hides the waste and the gap.
@@ -140,10 +140,7 @@ Use GitHub through `gh` for every PR operation (create, edit, view, watch, merge
 
 ### Wake mechanics and the audit tick
 
-Run an audit tick about every 30 minutes on a real timer, not memory or completion notifications (which can be dropped).
-
-- In Claude Code, use `/loop 30m <tick prompt>`. For event waits between ticks (CI, a merge), run the watcher as a background agent or background shell command so its completion wakes you.
-- In Codex, keep the `/goal` armed and pace ticks with a blocking heartbeat (`sleep 1800`) or a blocking watcher (`gh pr checks <pr> --watch`), then run the tick.
+The armed `/goal` keeps the session working, in both hosts; don't build your own timer with `/loop` or `sleep`. Run the audit tick on a 30-minute cadence: record the time of each tick in the store, and at the start of every goal turn, run the tick if 30 minutes have passed since the last one. Wait on events (CI, a merge) with a watcher such as `gh pr checks <pr> --watch`, in the foreground or as a background command. In Claude Code, `/goal` also checks in every 30 minutes while background work is running, so a stalled watcher still gets noticed.
 
 At each tick:
 

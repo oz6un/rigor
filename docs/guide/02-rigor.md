@@ -5,8 +5,7 @@
 ```mermaid
 flowchart TD
     A[Your prompt] --> B[rigor]
-    B --> C[Read the principles index]
-    C --> D{Match the task}
+    B --> D{Match the task}
     D -->|Read-only question| E[Investigation]
     D -->|Defect| F[Bug fix]
     D -->|New behavior| G[Feature]
@@ -60,7 +59,7 @@ The Worktree cleanup playbook classifies each worktree by merge state, uncommitt
 /rigor i'm stepping away. keep going until the migration check reports zero old callers. log your decisions.
 ```
 
-Work you'll review later goes through `/figure-it-out`, which plans the phases and keeps a `/show-me-your-work` decision log. [Run work while you're away](./07-overnight.md) has the details.
+A long run you'll review later goes to the Autonomous run playbook, which keeps a `/show-me-your-work` decision log; `/figure-it-out` is for large work no playbook fits. A small change (a few lines, obvious approach) skips the design, delegation, and review steps, but still gets a runtime check. [Run work while you're away](./07-overnight.md) has the details.
 
 **Pitfall:** don't list skills in your prompt ("use /how, then /architect, then /arena"). The playbook already orders them, and a hand-written sequence usually drops or reorders steps. Name a skill only to override a specific choice.
 

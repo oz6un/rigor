@@ -7,22 +7,22 @@ An agent that verifies its own work can be left alone with a hard task. What mak
 A good handoff states the goal, the finish condition, permissions, and a way out:
 
 ```text
-/rigor i'm going to bed. migrate every caller to the new parser in a fresh worktree off <base>.
-done means zero old callers, all parser fixtures pass, old api deleted.
+/goal Use /rigor: i'm going to bed. migrate every caller to the new parser in a fresh worktree off <base>.
+done when zero old callers remain, all parser fixtures pass, and the old api is deleted.
 keep a decision log. don't ask me before committing.
-loop until done. if you're truly stuck after a few hours, stop and write up why.
+if you're truly stuck after a few hours, stop and write up why.
 ```
 
 What each line does:
 
 - "i'm going to bed" grants full autonomy: the agent stops checking in. It still pauses before irreversible actions such as force-pushing a shared branch or deploying.
-- "done means..." turns the goal into checks each iteration can run.
+- "done when..." is what `/goal` checks after every turn, so make it something the agent can show passing.
 - "fresh worktree off `<base>`" keeps the run away from anything else you have open.
 - "don't ask me before committing" answers in advance the question the agent would otherwise wait on.
-- "loop until done" routes to the Autonomous run playbook, which re-checks the finish condition on each iteration. Drive it with `/goal` in either tool, for example `/goal Use /rigor to <task>. Done when <check>.` (`/loop /rigor` doesn't work: `/loop` passes user-only skills through as plain text).
+- `/goal` keeps the session working until the "done when" condition holds, in either tool, and `/rigor` inside it routes the task to the Autonomous run playbook. (`/loop /rigor` doesn't work: `/loop` passes user-only skills through as plain text.) If you start with plain `/rigor`, it hands you a `/goal` line to paste.
 - The way out lets the agent stop at a real dead end and explain, instead of quietly redefining the goal.
 
-Because you'll review the work later, `/rigor` routes it through [`/figure-it-out`](../../skills/figure-it-out/SKILL.md), which plans the phases and sets up the decision log.
+The Autonomous run playbook keeps a decision log you can audit afterwards. [`/figure-it-out`](../../skills/figure-it-out/SKILL.md) is for large, cross-cutting work that no playbook fits.
 
 ## What each iteration does
 

@@ -2,7 +2,7 @@
 
 rigor ships 23 principles in the [`principles`](../../skills/principles/) skill. `/rigor` reads a principle when a playbook step names it. You can also ask for one directly (`/principles`). The rest of this chapter describes each principle.
 
-You don't invoke principles; you use their names to redirect work. Each name points to a full rule the agent has already read, so one phrase is more precise than a paragraph of instructions.
+You don't invoke principles; you use their names to redirect work. Each name points to a full rule in the `principles` skill that the agent reads when you name it, so one phrase is more precise than a paragraph of instructions.
 
 ## Examples
 
@@ -24,7 +24,7 @@ Two parallel attempts are about to write to the same branch:
 separate before serializing shared state. give each attempt its own worktree, no locks.
 ```
 
-The reply still has to say which decision the principle changed. A citation with no changed decision means the agent named it without applying it.
+If the agent cites a principle, ask which decision it changed; a citation with no changed decision means it was named without being applied.
 
 ## The list
 

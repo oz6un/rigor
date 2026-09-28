@@ -6,6 +6,8 @@ rigor is a port of [pstack](https://github.com/cursor/plugins/tree/main/pstack) 
 
 ## Install
 
+Requirements: `git`, `python3`, and `bash` (macOS or Linux). The PR playbooks use `gh`; `watch-pr` and `orch` use `bun`, or fetch it with Node's `npx` if bun isn't installed.
+
 One clone serves both Claude Code and Codex:
 
 ```bash
@@ -17,7 +19,7 @@ git clone git@github.com:oz6un/rigor.git ~/.local/share/rigor
 
 Codex runs a hook only after you approve it: open Codex, run `/hooks`, and trust rigor's two hooks (again whenever an update changes them). Claude Code needs no extra step. Start a new session afterwards.
 
-To update, pull and rerun the script (the rerun only matters when the Codex agents changed):
+To update, pull and rerun the script (the rerun matters when a pull adds or removes a skill or agent, or changes the Codex agents):
 
 ```bash
 git -C ~/.local/share/rigor pull && ~/.local/share/rigor/install.sh
@@ -43,7 +45,9 @@ Start a task with `/rigor` (Codex: `$rigor`):
 /rigor I'm going to bed. Land the stack even if CI flakes; I want everything merged by morning.
 ```
 
-`rigor` matches the task to a playbook, copies the playbook's steps into a todo list, and calls the other skills when a step needs them. It stays on for the rest of the session: a hook adds a one-line reminder to every later turn, so a new task in the same session gets the same treatment. After compaction or a resume, the hook tells the model to re-read the rigor skill, since compaction drops the skill's text (Codex) or can cut it short (Claude Code). Say "rigor off" to turn it off; that's recorded outside the conversation, so compaction can't undo it.
+Every "done" is backed by a command run in the session. The agent never weakens a test to make it pass; it changes a test only where your request changes the behavior the test checks and names each one, and it reports a test that contradicts your request as blocked instead of forcing it green.
+
+`rigor` matches the task to a playbook, copies the playbook's steps into a todo list, and calls the other skills when a step needs them. It stays on for the rest of the session: a hook adds a one-line reminder to every later turn, so a new task in the same session gets the same treatment. After compaction or a resume, the hook tells the model to re-read the rigor skill, since compaction drops the skill's text (Codex) or can cut it short (Claude Code). Start a message with "rigor off" to turn it off; that's recorded outside the conversation, so compaction can't undo it.
 
 For long work, combine it with `/goal` (both hosts), which keeps the session going until a condition you can check holds:
 
@@ -53,7 +57,7 @@ For long work, combine it with `/goal` (both hosts), which keeps the session goi
 
 `/loop /rigor ...` does not work: `/loop` passes user-invoked skills through as plain text. `/goal` works because rigor's hook sees `/rigor` in the goal text and turns rigor on.
 
-Like pstack, rigor runs only when you type it, and every other skill except `recall` is hidden from the model's skill list, so none of them fire on their own in unrelated work. `rigor` reads them when a step needs them, and you can still type any of them directly (`/how`, `$why`).
+Like pstack, rigor runs only when you type it, and every other skill except `recall` is hidden from the model's skill list, so none of them fire on their own in unrelated work. `rigor` reads the ones its playbooks use; the rest (`/blast-radius`, `/reflect`, `/automate-me`, the verification-skill creators, `/typescript-best-practices`) run only when you type them. `recall` can trigger on its own when you ask to catch up on your work.
 
 The other skills can also be used on their own:
 
@@ -114,7 +118,7 @@ See [docs/guide](docs/guide/README.md) for a longer walkthrough.
 | `no-comments` | You want unnecessary comments stripped before review. |
 | `unslop` | You're cleaning up prose. |
 | `technical-writing` | You're writing docs, RFCs, READMEs, PR descriptions, or commit messages. |
-| `typescript-best-practices` | You're reading or writing TypeScript. |
+| `typescript-best-practices` | You're writing TypeScript and type it by hand; it doesn't load on its own. |
 | `control-ui` | You need to drive a browser or Electron UI to verify a change. |
 | `control-cli` | You need to drive a CLI or TUI to verify a change. |
 | `create-verification-skill` | Your project has no scripted way to prove app behavior. |

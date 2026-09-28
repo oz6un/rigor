@@ -49,7 +49,7 @@ Tests alone are not sufficient verification. A PR is verified only when its unit
   - [ ] `<control skill>` from the installed skills
   - [ ] The rigor skill's `playbooks/opening-a-pr.md` from the installed skills
   - [ ] `git show origin/main:<each repo file the program depends on, such as CLAUDE.md or AGENTS.md>`
-- [ ] Arm the 30-minute audit tick. In Claude Code, `/loop 30m` with the tick prompt. In Codex, a blocking heartbeat under the armed `/goal`. Never leave the cadence to memory.
+- [ ] Keep the 30-minute audit tick under the armed `/goal`: record each tick's time in the store, and at the start of every goal turn run the tick prompt if 30 minutes have passed. No `/loop` or `sleep` timers.
 - [ ] Use this tick prompt, verbatim. "Re-read the execution playbook and the armed objective. Audit the operation against both and fix drift in this tick. Probe every active lane and judge progress by side effects only. Stand down a stuck lane and dispatch its replacement now. Then post a short status message to the user only when the audit found a tracked change that no earlier status message reported, such as a PR opened, a code-ready head, a round launched or closed, a verdict, a merge, a stuck agent and the action taken, a blocker added or cleared, or a decision only the user can make. Name every such change and nothing else. Do not repeat a table, the merged list, or an unchanged blocker. If the audit found none, end the turn with no reply text. Either way, log this tick's row in your decision trail. The row names the items reported, or none."
 - [ ] On the user's hold or stand-down, send every owner a zero-writes order at once.
 

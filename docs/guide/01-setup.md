@@ -16,6 +16,6 @@ Pick something real but small and describe it as you would to a colleague:
 
 Watch the todo list. Its first items are the matched playbook's steps (Feature, for this prompt). A step the agent skips stays in the list as `skip: <reason>`, so you can see what it chose not to do.
 
-After that, type normal follow-ups. `/rigor` stays on for the session until you say otherwise.
+After that, type normal follow-ups. `/rigor` stays on for the session; start a message with `rigor off` to turn it off.
 
 Next: [Route work through `/rigor`](./02-rigor.md).

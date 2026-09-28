@@ -58,8 +58,8 @@ File Backlog items in the team's backlog tracker if one is available through an 
 For each approved row, follow its Routing field:
 
 - A small edit to an existing skill (one bullet, a tightened sentence, a corrected fact): make it directly.
-- A substantive edit (a new section, a new table, more than about ten lines): follow the rigor skill's `playbooks/authoring-a-skill.md`, including its test-and-iterate loop.
-- `tune description: <skill path>` (the skill exists but didn't trigger when it should have): follow the description-tuning steps in `playbooks/authoring-a-skill.md`.
+- A substantive edit (a new section, a new table, more than about ten lines): follow the rigor skill's `playbooks/authoring-a-skill.md`, including its validation step.
+- `tune description: <skill path>` (the skill exists but didn't trigger when it should have): follow the description guidance (the frontmatter step) in `playbooks/authoring-a-skill.md`.
 - `new skill: <kebab-name>`: create it with `playbooks/authoring-a-skill.md`. Don't improvise the structure.
 
 If the repository has a skill validator or lint, run it on every skill you touched.

@@ -4,6 +4,8 @@
 
 ## State the finish condition up front
 
+The agent won't weaken a test to reach it: no deleted or loosened assertions, skips, or special cases. It changes a test only where your request changes the behavior the test checks, and names each such test. A test that contradicts your request gets reported as blocked.
+
 ```text
 /rigor add json output to this command. text output stays byte-identical, the json parses, both run against the sample project. show me the evidence.
 ```
