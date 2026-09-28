@@ -47,6 +47,13 @@ steps = [
     ("bad input never blocks", subprocess.run([sys.executable, str(HOOK)], input="not json", capture_output=True, text=True).returncode, 0),
 ]
 
+docs = Path(__file__).resolve().parent.parent
+for doc in [docs / "README.md", *sorted((docs / "docs" / "guide").glob("*.md"))]:
+    for n, line in enumerate(doc.read_text().splitlines(), 1):
+        if line.startswith(("/rigor", "$rigor", "/goal")) and "rigor" in line:
+            steps.append((f"documented example turns rigor on: {doc.name}:{n}",
+                          prompt(line, session=f"doc-{doc.stem}-{n}"), "rigor is on for this session."))
+
 failed = 0
 for label, got, want in steps:
     ok = got == want if want is None or isinstance(want, int) else (got is not None and want in got)

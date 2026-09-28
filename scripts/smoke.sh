@@ -80,7 +80,10 @@ text = open(sys.argv[1]).read()
 blocks = re.findall(r"^(`{3,4})markdown\n(.*?)^\1$", text, re.S | re.M)
 open(sys.argv[2], "w").write(max(blocks, key=lambda b: len(b[1]))[1])
 EOF
-check "check-plan.mjs accepts the plan skeleton's structure" bash -c "node '$s/rigor/scripts/check-plan.mjs' '$tmp/plan.md' | grep -q '1 PR sections'"
+sed -i.bak 's|<fast model>|haiku|g' "$tmp/plan.md"
+check "check-plan.mjs accepts the filled-in plan skeleton" bash -c "node '$s/rigor/scripts/check-plan.mjs' '$tmp/plan.md' | grep -q '1 PR sections, 0 problems'"
+sed 's|/goal|/loop 30m|g' "$tmp/plan.md" > "$tmp/plan-loop.md"
+check "check-plan.mjs rejects a plan that arms /loop instead of /goal" bash -c "! node '$s/rigor/scripts/check-plan.mjs' '$tmp/plan-loop.md' | grep -q ' 0 problems'"
 
 orch="$s/rigor/scripts/orch/orch"
 export ORCH_STORE="$tmp/orch"
