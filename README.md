@@ -11,7 +11,7 @@ Requirements: `git`, `python3`, and `bash` (macOS or Linux). The PR playbooks ne
 One clone serves both Claude Code and Codex:
 
 ```bash
-git clone git@github.com:oz6un/rigor.git ~/.local/share/rigor
+git clone https://github.com/oz6un/rigor.git ~/.local/share/rigor
 ~/.local/share/rigor/install.sh
 ```
 
