@@ -22,8 +22,9 @@ from pathlib import Path
 
 SKILL = Path(__file__).resolve().parent.parent / "SKILL.md"
 STATE = Path.home() / ".rigor" / "sessions"
-# /rigor or $rigor as its own word (not /rigor-agent, not inside `quotes`).
-ON = re.compile(r"(^|\s)[/$]rigor(?=\s|$)")
+# /rigor or $rigor as its own word, optionally followed by punctuation ("/rigor: fix x");
+# not /rigor-agent or /rigorous, and not inside `quotes`.
+ON = re.compile(r"(^|\s)[/$]rigor(?=[\s:;,.!?)]|$)")
 # Only a prompt that starts with the command turns rigor off, so talking about "rigor off" doesn't.
 OFF = re.compile(r"^\s*[/$]?rigor\s+off\b", re.I)
 KEEP_DAYS = 30
@@ -34,7 +35,7 @@ def reminder(event_name, source):
     if event_name == "SessionStart":
         return (f"rigor is on for this session and the context was just {'compacted' if source == 'compact' else 'resumed'}. "
                 f"Before continuing, re-read {SKILL} in full; its text may be missing or cut short. "
-                'Stay in the playbook you were running. The user can turn rigor off by saying "rigor off".')
+                'Stay in the playbook you were running. The user turns rigor off by starting a message with "rigor off".')
     return ("rigor is on for this session. For a new task that needs care, pick its rigor playbook "
             f"({SKILL}; re-read it if it's no longer in context). Back every \"done\" with evidence from this "
             "session, and never weaken a test to make it pass. Casual turn: skip rigor.")

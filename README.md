@@ -6,7 +6,7 @@ rigor is a port of [pstack](https://github.com/cursor/plugins/tree/main/pstack) 
 
 ## Install
 
-Requirements: `git`, `python3`, and `bash` (macOS or Linux). The PR playbooks use `gh`; `watch-pr` and `orch` use `bun`, or fetch it with Node's `npx` if bun isn't installed.
+Requirements: `git`, `python3`, and `bash` (macOS or Linux). The PR playbooks need `gh` and Node (the plan checker runs on `node`; `watch-pr` and `orch` use `bun`, or fetch it with `npx`). Optional: `tmux` for `control-cli`, and the other CLI (`codex` or `claude`) for cross-model second opinions.
 
 One clone serves both Claude Code and Codex:
 
@@ -57,7 +57,7 @@ For long work, combine it with `/goal` (both hosts), which keeps the session goi
 
 `/loop /rigor ...` does not work: `/loop` passes user-invoked skills through as plain text. `/goal` works because rigor's hook sees `/rigor` in the goal text and turns rigor on.
 
-Like pstack, rigor runs only when you type it, and every other skill except `recall` is hidden from the model's skill list, so none of them fire on their own in unrelated work. `rigor` reads the ones its playbooks use; the rest (`/blast-radius`, `/reflect`, `/automate-me`, the verification-skill creators, `/typescript-best-practices`) run only when you type them. `recall` can trigger on its own when you ask to catch up on your work.
+Like pstack, rigor runs only when you type it, and every other skill except `recall` is hidden from the model's skill list, so none of them fire on their own in unrelated work. `rigor` reads the ones its playbooks use; the rest (`/blast-radius`, `/reflect`, `/automate-me`, `/create-verification-skill`, `/maintain-verification-skill`, `/typescript-best-practices`) run only when you type them. `recall` can trigger on its own when you ask to catch up on your work.
 
 The other skills can also be used on their own:
 

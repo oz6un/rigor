@@ -37,7 +37,7 @@ Fix a bug through a failing test, without forcing one through brittle mocks:
 Keep a run honest while you're away (full version in [the overnight page](./07-overnight.md)):
 
 ```text
-/goal Use /rigor: i'm going to bed. keep going until every fixture passes. keep a decision log i can audit in the morning.
+/goal Use /rigor to get every fixture passing; i'm going to bed. done when the fixture suite passes. keep a decision log i can audit in the morning.
 ```
 
 Redirect a drifting run with one line:

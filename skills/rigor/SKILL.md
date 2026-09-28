@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 # Rigor
 
-Rigor stays on for the rest of the session once invoked; a hook reminds you each turn and after compaction. Apply it to each new task that matches a playbook, stay out of the way on casual turns, and stop when the user says "rigor off".
+Rigor stays on for the rest of the session once invoked; a hook reminds you each turn and after compaction. Apply it to each new task that matches a playbook, stay out of the way on casual turns, and stop when the user starts a message with "rigor off".
 
 ## Start a task
 
@@ -44,7 +44,7 @@ No playbook fits, or the work is large and cross-cutting: use the `figure-it-out
 
 ## Supporting skills
 
-They don't appear in your skill list; to use one, read `<rigor skill dir>/../<name>/SKILL.md` and follow it, where `<rigor skill dir>` is this skill's directory with symlinks resolved (the reminder hook gives the resolved path), so a same-named skill of the user's isn't read by mistake. The playbooks say when: `how`, `why`, `architect`, `arena`, `swarm`, `interrogate`, `tdd`, `deslop`, `no-comments`, `unslop`, `technical-writing`, `control-ui`, `control-cli`, `show-me-your-work`, `figure-it-out`, and `principles` (one file per principle; read one when a step names it).
+They don't appear in your skill list; to use one, read `<rigor skill dir>/../<name>/SKILL.md` and follow it, where `<rigor skill dir>` is this skill's directory with symlinks resolved (the reminder hook gives the resolved path), so a same-named skill of the user's isn't read by mistake. The playbooks say when: `how`, `why`, `architect`, `arena`, `swarm`, `interrogate`, `tdd`, `deslop`, `no-comments`, `unslop`, `technical-writing`, `control-ui`, `control-cli`, `show-me-your-work`, `figure-it-out`, and `principles` (one file per principle; read one when a step or the user names it).
 
 ## Evidence
 

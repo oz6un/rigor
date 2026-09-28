@@ -43,6 +43,7 @@ steps = [
     ("'rigor off' turns it off and says so", prompt("rigor off, thanks"), "rigor is now off"),
     ("stays off after that", prompt("another task"), None),
     ("compaction after off says nothing", start("compact"), None),
+    ("/rigor: with a colon turns a session on", prompt("/goal Use /rigor: fix it", session="s6"), "rigor is on for this session."),
     ("words like /rigorous don't count", prompt("the /rigorous path", session="s3"), None),
     ("bad input never blocks", subprocess.run([sys.executable, str(HOOK)], input="not json", capture_output=True, text=True).returncode, 0),
 ]

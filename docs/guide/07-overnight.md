@@ -7,20 +7,20 @@ An agent that verifies its own work can be left alone with a hard task. What mak
 A good handoff states the goal, the finish condition, permissions, and a way out:
 
 ```text
-/goal Use /rigor: i'm going to bed. migrate every caller to the new parser in a fresh worktree off <base>.
-done when zero old callers remain, all parser fixtures pass, and the old api is deleted.
+/goal Use /rigor to migrate every caller to the new parser in a fresh worktree off <base>. i'm going to bed.
+done when zero old callers remain, all parser fixtures pass, and the old api is deleted,
+or when you've made no progress for 3 hours and written up why in STUCK.md.
 keep a decision log. don't ask me before committing.
-if you're truly stuck after a few hours, stop and write up why.
 ```
 
 What each line does:
 
 - "i'm going to bed" grants full autonomy: the agent stops checking in. It still pauses before irreversible actions such as force-pushing a shared branch or deploying.
-- "done when..." is what `/goal` checks after every turn, so make it something the agent can show passing.
+- The whole `/goal` text is what the checker reads after every turn, and it ends the goal when the "done when" part holds. Make that part something the agent can show passing.
 - "fresh worktree off `<base>`" keeps the run away from anything else you have open.
 - "don't ask me before committing" answers in advance the question the agent would otherwise wait on.
 - `/goal` keeps the session working until the "done when" condition holds, in either tool, and `/rigor` inside it routes the task to the Autonomous run playbook. (`/loop /rigor` doesn't work: `/loop` passes user-only skills through as plain text.) If you start with plain `/rigor`, it hands you a `/goal` line to paste.
-- The way out lets the agent stop at a real dead end and explain, instead of quietly redefining the goal.
+- The "or when you've made no progress..." clause is the way out. It sits inside the done condition because `/goal` only stops when that condition holds; a way out written elsewhere would just get another "not met yet".
 
 The Autonomous run playbook keeps a decision log you can audit afterwards. [`/figure-it-out`](../../skills/figure-it-out/SKILL.md) is for large, cross-cutting work that no playbook fits.
 

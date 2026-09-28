@@ -74,7 +74,7 @@ STANDING     <preferences.md pasted verbatim>
 ## Queue and drain
 
 - When a subagent finishes, run `orch inbox push <agent> <unit> <status> [--report PATH]` and go back to what you were doing. Don't review its work inline; if it needs review, that's a verifier unit.
-- Drain in batches at four points: after finishing a critical section, at a track rollup, when a frontier watcher wakes you (the `/goal` check-ins cover a watcher that dies silently), and before a report to the user. Start each batch with `orch inbox drain`. Anything that arrives during a drain waits for the next one.
+- Drain in batches at four points: after finishing a critical section, at a track rollup, when a frontier watcher wakes you (the 30-minute tick covers a watcher that dies silently), and before a report to the user. Start each batch with `orch inbox drain`. Anything that arrives during a drain waits for the next one.
 - Critical sections you finish before draining: writing a brief, a stack operation, a conflict decision, writing a gate, updating the ledger or frontier.
 - In each drain, classify every pointer (landed, needs-verify, failed, zombie, noise), record the results with `orch unit add`, `orch unit set`, and `orch ledger record`, run `orch status`, then spawn the next wave in one message.
 - At each rollup, account for every spawned child: arrived, respawned, or scope explicitly absorbed. Quietly redoing a missing child's work hides the waste and the gap.
@@ -130,7 +130,7 @@ These apply to Orchestrate and to both Autopilot playbooks. In the Autopilots, t
 ### Operator gates
 
 - **State, then wait.** A request to state the protocol or plan is not a go. Deliver it and stop.
-- **Arm the objective on the go.** Write the program objective (plan path, PR ids in order, verification rule, who merges, done condition) to the store. Arm `/goal <objective>` (both hosts) so the session keeps working across turns until done.
+- **Arm the objective on the go.** Write the program objective (plan path, PR ids in order, verification rule, who merges, done condition) to the store. Arm `/goal <objective>` (both hosts) so the session keeps working across turns until done. Only the user can type `/goal`, so give them the exact line to paste, done condition included, then arm the tick below.
 - **User-reserved items** stop at merge-ready; the user merges them.
 - **Stop means stop.** A hold from the user goes to every owner at once as a zero-writes order; owners keep their briefs until released.
 
@@ -140,7 +140,10 @@ Use GitHub through `gh` for every PR operation (create, edit, view, watch, merge
 
 ### Wake mechanics and the audit tick
 
-The armed `/goal` keeps the session working, in both hosts; don't build your own timer with `/loop` or `sleep`. Run the audit tick on a 30-minute cadence: record the time of each tick in the store, and at the start of every goal turn, run the tick if 30 minutes have passed since the last one. Wait on events (CI, a merge) with a watcher such as `gh pr checks <pr> --watch`, in the foreground or as a background command. In Claude Code, `/goal` also checks in every 30 minutes while background work is running, so a stalled watcher still gets noticed.
+The armed `/goal` keeps the session working toward the objective, but it isn't a timer: in Claude Code its check-ins back off (30 minutes, then 1 hour, then every 2 hours) and pause after three idle ones until the user types, and Codex has no check-ins at all. A program that waits hours on workers needs a real 30-minute tick next to the goal.
+
+- In Claude Code, also run `/loop 30m <tick prompt>`. The tick prompt is plain text, so `/loop` runs it (`/loop` can't run `/rigor` itself). For event waits between ticks, run the watcher as a background command.
+- In Codex, pace ticks with a bounded wait under the goal: block on a watcher with a timeout of at most 30 minutes (`timeout 1800 gh pr checks <pr> --watch`), or `sleep 1800` when there's nothing to watch, then run the tick.
 
 At each tick:
 
