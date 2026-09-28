@@ -74,6 +74,7 @@ done
 
 count=0
 for skill in "$root"/skills/*/; do
+  [[ -f "$skill/SKILL.md" ]] || continue
   name="$(basename "$skill")"
   link "$root/skills/$name" "$claude_skills/$name"
   link "$root/skills/$name" "$codex_skills/$name"
