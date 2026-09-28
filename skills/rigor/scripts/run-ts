@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Run a TypeScript entry point with bun, falling back to `npx -y bun` when bun isn't installed.
+set -euo pipefail
+if command -v bun >/dev/null; then exec bun "$@"; fi
+if command -v npx >/dev/null; then exec npx -y bun "$@"; fi
+echo "run-ts: needs bun (https://bun.sh) or Node's npx" >&2
+exit 127

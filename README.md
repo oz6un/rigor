@@ -133,6 +133,7 @@ docs/guide/            Walkthrough
 
 ## Development
 
+- `scripts/smoke.sh` runs every script the skills call (install, hooks, orch, watch-pr, log and audit helpers) in a throwaway directory, with no model calls. Run it before pushing.
 - `python3 scripts/test_mode_hook.py` runs the stay-on hook through a session's life (on, reminders, compaction, off).
 - `python3 scripts/check.py` checks skill frontmatter, links between skills, playbooks and principles, that the two principle indexes, the Claude Code and Codex agent files, and the README skills table all agree.
 - Because the installed skills are symlinks into your clone, edits show up in the next session with no reinstall step. Rerun `install.sh` after adding or removing a skill or agent.
