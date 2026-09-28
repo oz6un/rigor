@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 # Why
 
-Other skills named here don't appear in the model's skill list. To use one, read `<this skill's dir>/../<name>/SKILL.md` and follow it.
+Other skills named here don't appear in the model's skill list. To use one, read `<this skill's dir>/../<name>/SKILL.md` (with symlinks in this skill's path resolved) and follow it.
 
 Find the motivation behind a piece of code. `how` explains what code does; `why` explains the forces that gave it its shape. That motivation lives outside the code, in commits, PRs, tickets, docs, chat, and production telemetry, all of it incomplete, so the answer has to separate what the record states from what you infer.
 

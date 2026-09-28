@@ -5,7 +5,7 @@ description: Rebuilds your recent working context from your own chat history, li
 
 # Recall
 
-Other skills named here don't appear in the model's skill list. To use one, read `<this skill's dir>/../<name>/SKILL.md` and follow it.
+Other skills named here don't appear in the model's skill list. To use one, read `<this skill's dir>/../<name>/SKILL.md` (with symlinks in this skill's path resolved) and follow it.
 
 Before starting or resuming work, rebuild the user's recent context and return a short brief: where things stand and what to do next. Read only what the in-scope threads need, then stop.
 

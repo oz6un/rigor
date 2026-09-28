@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 # Technical writing
 
-Other skills named here don't appear in the model's skill list. To use one, read `<this skill's dir>/../<name>/SKILL.md` and follow it.
+Other skills named here don't appear in the model's skill list. To use one, read `<this skill's dir>/../<name>/SKILL.md` (with symlinks in this skill's path resolved) and follow it.
 
 The goal is writing that a tired engineer understands on the first read. Four layers get there, each answering one question:
 

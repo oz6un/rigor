@@ -21,7 +21,7 @@ This playbook starts where `playbooks/babysit.md` ends. All PR operations use th
    - a required check concludes `FAILURE` or `CANCELLED` and blocks the merge after auto-merge is no longer pending; or
    - `mergeStateStatus` is `UNSTABLE` or `DIRTY` with no auto-merge pending.
 
-   `BLOCKED` while checks are pending or auto-merge is armed is not a failure. Babysit's `WAITING`/`merge-queue` stop condition doesn't apply here. Hold the watch under a self-paced loop (Claude Code: `/loop` without an interval; Codex: `/goal`). Report each merge and the new ceiling. If the queue stalls, diagnose before changing anything.
+   `BLOCKED` while checks are pending or auto-merge is armed is not a failure. Babysit's `WAITING`/`merge-queue` stop condition doesn't apply here. Hold the watch under `/goal` (both hosts). Report each merge and the new ceiling. If the queue stalls, diagnose before changing anything.
 9. **Stop at the ceiling.** When the verified run has merged, report what landed, which PR is the next unverified one, and what verifying it would take. Extending the run is a new pass starting at step 1.
 
 **Reply:** the verified run and its ceiling, each PR's verdict and which agent produced it, what you armed and how you confirmed it, what landed, and what the next gap needs.

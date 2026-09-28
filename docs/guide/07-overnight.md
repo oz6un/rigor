@@ -19,7 +19,7 @@ What each line does:
 - "done means..." turns the goal into checks each iteration can run.
 - "fresh worktree off `<base>`" keeps the run away from anything else you have open.
 - "don't ask me before committing" answers in advance the question the agent would otherwise wait on.
-- "loop until done" routes to the Autonomous run playbook, which re-checks the finish condition on each iteration. In Claude Code you can drive it with `/loop`; in Codex, with `/goal`.
+- "loop until done" routes to the Autonomous run playbook, which re-checks the finish condition on each iteration. Drive it with `/goal` in either tool, for example `/goal Use /rigor to <task>. Done when <check>.` (`/loop /rigor` doesn't work: `/loop` passes user-only skills through as plain text).
 - The way out lets the agent stop at a real dead end and explain, instead of quietly redefining the goal.
 
 Because you'll review the work later, `/rigor` routes it through [`/figure-it-out`](../../skills/figure-it-out/SKILL.md), which plans the phases and sets up the decision log.

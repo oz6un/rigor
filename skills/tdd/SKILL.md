@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 # TDD bug fix
 
-Other skills named here don't appear in the model's skill list. To use one, read `<this skill's dir>/../<name>/SKILL.md` and follow it.
+Other skills named here don't appear in the model's skill list. To use one, read `<this skill's dir>/../<name>/SKILL.md` (with symlinks in this skill's path resolved) and follow it.
 
 When a bug has a clear, cheap test path, make the broken behavior executable before changing production code. The goal is one focused regression test that fails before the fix and passes after it.
 

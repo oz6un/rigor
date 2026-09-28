@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 # Swarm
 
-Other skills named here don't appear in the model's skill list. To use one, read `<this skill's dir>/../<name>/SKILL.md` and follow it.
+Other skills named here don't appear in the model's skill list. To use one, read `<this skill's dir>/../<name>/SKILL.md` (with symlinks in this skill's path resolved) and follow it.
 
 Run N parallel workers. They can each cover a separate slice, race on the same brief, or a mix of both. You wait for all of them, aggregate, and return one report.
 

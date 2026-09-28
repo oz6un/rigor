@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 # Automate me
 
-Other skills named here don't appear in the model's skill list. To use one, read `<this skill's dir>/../<name>/SKILL.md` and follow it.
+Other skills named here don't appear in the model's skill list. To use one, read `<this skill's dir>/../<name>/SKILL.md` (with symlinks in this skill's path resolved) and follow it.
 
 Produce one `<handle>-mode` skill (for example `jay-mode`) that tells agents how this user works. The mode skill layers the user's preferences on top of `rigor`: it invokes rigor for playbooks, principles, and verification, and adds only what differs for this user.
 

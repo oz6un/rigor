@@ -5,7 +5,7 @@ install.sh registers this for UserPromptSubmit and SessionStart in both hosts. P
 marker file under ~/.rigor/sessions means "on":
 
   prompt with /rigor or $rigor        -> on
-  prompt with "rigor off"             -> off
+  prompt starting with "rigor off"    -> off (announced once)
   any prompt while on                 -> one-line reminder
   SessionStart compact/resume while on -> tell the model to re-read SKILL.md now, because
                                           compaction drops or truncates the skill's text
@@ -14,6 +14,7 @@ The state lives in the file, not the conversation, so compaction can't lose an "
 Never exit 2: in UserPromptSubmit that blocks the user's prompt.
 """
 import json
+import os
 import re
 import sys
 import time
@@ -21,8 +22,10 @@ from pathlib import Path
 
 SKILL = Path(__file__).resolve().parent.parent / "SKILL.md"
 STATE = Path.home() / ".rigor" / "sessions"
-ON = re.compile(r"(^|\s)[/$]rigor\b")
-OFF = re.compile(r"\brigor\s+off\b|\b(stop|disable|exit|turn\s+off)\s+(using\s+)?rigor\b|\bturn\s+rigor\s+off\b", re.I)
+# /rigor or $rigor as its own word (not /rigor-agent, not inside `quotes`).
+ON = re.compile(r"(^|\s)[/$]rigor(?=\s|$)")
+# Only a prompt that starts with the command turns rigor off, so talking about "rigor off" doesn't.
+OFF = re.compile(r"^\s*[/$]?rigor\s+off\b", re.I)
 KEEP_DAYS = 30
 REREAD_COOLDOWN = 120
 
@@ -43,7 +46,7 @@ def main():
     except ValueError:
         return
     session = re.sub(r"[^\w-]", "", str(event.get("session_id", "")))
-    if not session:
+    if not session or os.environ.get("RIGOR_NESTED"):
         return
     name = event.get("hook_event_name", "")
     marker = STATE / session
@@ -51,7 +54,10 @@ def main():
     if name == "UserPromptSubmit":
         prompt = event.get("prompt") or ""
         if OFF.search(prompt):
-            marker.unlink(missing_ok=True)
+            if marker.exists():
+                marker.unlink()
+                print(json.dumps({"hookSpecificOutput": {"hookEventName": name, "additionalContext":
+                    "rigor is now off for this session. Stop following the rigor skill."}}))
             return
         if ON.search(prompt):
             STATE.mkdir(parents=True, exist_ok=True)

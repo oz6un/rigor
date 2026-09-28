@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 # TypeScript best practices
 
-Other skills named here don't appear in the model's skill list. To use one, read `<this skill's dir>/../<name>/SKILL.md` and follow it.
+Other skills named here don't appear in the model's skill list. To use one, read `<this skill's dir>/../<name>/SKILL.md` (with symlinks in this skill's path resolved) and follow it.
 
 Read the `type-system-discipline` principle (in the `principles` skill) first. Examples for each rule are in `references/patterns.md`.
 

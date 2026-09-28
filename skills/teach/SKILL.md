@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 # Teach
 
-Other skills named here don't appear in the model's skill list. To use one, read `<this skill's dir>/../<name>/SKILL.md` and follow it.
+Other skills named here don't appear in the model's skill list. To use one, read `<this skill's dir>/../<name>/SKILL.md` (with symlinks in this skill's path resolved) and follow it.
 
 Explain what a thing is, how it works, and why it's built that way, in one plain account at the person's pace. The goal is their understanding; you don't change anything.
 

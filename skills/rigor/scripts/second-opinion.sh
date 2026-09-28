@@ -50,6 +50,8 @@ if [[ -t 0 ]]; then
   exit 2
 fi
 prompt="$(cat)"
+# The reviewer session shouldn't pick up rigor's stay-on hook from its prompt text.
+export RIGOR_NESTED=1
 
 case "$cli" in
   codex)

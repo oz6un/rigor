@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 # Figure it out
 
-Other skills named here don't appear in the model's skill list. To use one, read `<this skill's dir>/../<name>/SKILL.md` and follow it.
+Other skills named here don't appear in the model's skill list. To use one, read `<this skill's dir>/../<name>/SKILL.md` (with symlinks in this skill's path resolved) and follow it.
 
 When a task matches no playbook, design one. The first deliverable, before any code, is the workflow: a sequence of phases sized to the task's risk, run as a series of experiments, that leaves a decision log the user can audit after stepping away.
 

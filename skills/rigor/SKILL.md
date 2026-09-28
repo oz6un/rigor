@@ -44,14 +44,14 @@ No playbook fits, or the work is large and cross-cutting: use the `figure-it-out
 
 ## Supporting skills
 
-They don't appear in your skill list; to use one, read `<rigor skill dir>/../<name>/SKILL.md` and follow it. The playbooks say when: `how`, `why`, `architect`, `arena`, `swarm`, `interrogate`, `tdd`, `deslop`, `no-comments`, `unslop`, `technical-writing`, `control-ui`, `control-cli`, `show-me-your-work`, `figure-it-out`, and `principles` (one file per principle; read one when a step names it).
+They don't appear in your skill list; to use one, read `<rigor skill dir>/../<name>/SKILL.md` and follow it, where `<rigor skill dir>` is this skill's directory with symlinks resolved (the reminder hook gives the resolved path), so a same-named skill of the user's isn't read by mistake. The playbooks say when: `how`, `why`, `architect`, `arena`, `swarm`, `interrogate`, `tdd`, `deslop`, `no-comments`, `unslop`, `technical-writing`, `control-ui`, `control-cli`, `show-me-your-work`, `figure-it-out`, and `principles` (one file per principle; read one when a step names it).
 
 ## Evidence
 
 These hold at every size because they are what makes the result trustworthy, and a capable model skips them under pressure.
 
 - Back each claim in the final report with the command and output from this session that shows it, or label it inferred or a guess. Don't hand the user a check you could have run.
-- Never weaken a test to make it pass: don't delete or loosen assertions, skip tests, or special-case the code under test. If a test contradicts the spec or the user's request, stop and report the conflict as blocked instead of forcing it green.
+- Never weaken a test to make it pass: don't delete or loosen assertions, skip tests, or special-case the code under test. Update a test's expected value only where the user's request changes the behavior it checks, and name each such test in the report. If a test conflicts with the request in a way the request doesn't clearly settle, stop and report it as blocked instead of forcing it green.
 - Only link artifacts you created or read this session.
 
 ## The user's rules
@@ -63,7 +63,7 @@ These hold at every size because they are what makes the result trustworthy, and
 
 ## Subagents
 
-Delegate only large, independent tracks of work, such as a wide investigation or separate slices in parallel. Don't delegate what you can finish in a few tool calls, keep one writer per file or branch, and don't spawn subagents to re-check your own work. Use the `rigor-agent` subagent for delegated work (Claude Code: `subagent_type: "rigor-agent"`; Codex: spawn the `rigor-agent` custom agent). You own its output: read its diff yourself.
+Delegate only large, independent tracks of work, such as a wide investigation or separate slices in parallel. Don't delegate what you can finish in a few tool calls, keep one writer per file or branch, and don't spawn a subagent just to re-check a small change. The independent verifiers a playbook requires (Shipping, verification rounds, a decision-log review) still run. Use the `rigor-agent` subagent for delegated work (Claude Code: `subagent_type: "rigor-agent"`; Codex: spawn the `rigor-agent` custom agent). You own its output: read its diff yourself.
 
 For a second opinion from another model family, pipe a prompt to `<rigor skill dir>/scripts/second-opinion.sh` (Claude Code calls `codex exec`, Codex calls `claude -p`; `--help` for options). Treat another reviewer's findings as hypotheses: act on one when you can reproduce it or it comes with a failing test.
 

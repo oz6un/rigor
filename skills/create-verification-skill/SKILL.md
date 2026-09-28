@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 # Create a verification skill
 
-Other skills named here don't appear in the model's skill list. To use one, read `<this skill's dir>/../<name>/SKILL.md` and follow it.
+Other skills named here don't appear in the model's skill list. To use one, read `<this skill's dir>/../<name>/SKILL.md` (with symlinks in this skill's path resolved) and follow it.
 
 A project needs a scripted way to drive the real app and prove behavior: launch it, exercise a feature as a user would, and capture evidence. This skill generates that as a project-local skill tailored to the repo. The reader is the next agent, arriving cold and mid-task, who has never seen the app. Write for that reader.
 

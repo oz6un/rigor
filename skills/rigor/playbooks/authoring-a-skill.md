@@ -13,7 +13,7 @@ You own the skill's wording. Claude Code and Codex read the same `SKILL.md` form
      assets/           # optional: templates or files copied into output
    ```
 
-   Where it lives: in a skill collection like this one, `skills/<name>/`. For a single project, Claude Code reads `.claude/skills/<name>/` and Codex reads `.agents/skills/<name>/`. For one user, `~/.claude/skills/` and `~/.codex/skills/`.
+   Where it lives: in a skill collection like this one, `skills/<name>/`. For a single project, Claude Code reads `.claude/skills/<name>/` and Codex reads `.agents/skills/<name>/`. For one user, `~/.claude/skills/` and `~/.agents/skills/`.
 3. **Write the frontmatter.** Only these fields:
 
    ```yaml
@@ -23,7 +23,7 @@ You own the skill's wording. Claude Code and Codex read the same `SKILL.md` form
    ---
    ```
 
-   The description is the only part both hosts keep in context before the skill is invoked, so it decides whether the skill triggers. Write one or two plain sentences: what the skill does, then the situations and user phrasings that should trigger it. Stay under 1024 characters. Add `disable-model-invocation: true` (Claude Code) only when the skill must run only when the user types `/<name>`; Codex ignores the field, so say "invoke only when asked" in the description too if it matters there.
+   The description is the only part both hosts keep in context before the skill is invoked, so it decides whether the skill triggers. Write one or two plain sentences: what the skill does, then the situations and user phrasings that should trigger it. Stay under 1024 characters. To make a skill run only when the user types it, set both `disable-model-invocation: true` (Claude Code) and an `agents/openai.yaml` containing `policy:` / `allow_implicit_invocation: false` (Codex); `scripts/check.py` fails if only one is set. A skill that names a hidden skill must also say how to read it (copy the "Other skills named here..." line from an existing skill).
 4. **Write the body for progressive disclosure.** `SKILL.md` loads in full when the skill triggers, so keep it to what every run needs: when to use it, the steps, the gates, and the output shape. Aim for under about 300 lines. Move detail that only some runs need (long rubrics, API notes, worked examples) into `references/<topic>.md` and link it from the step that needs it, saying when to read it. Put deterministic logic (parsing, validation, API calls) in `scripts/` and tell the agent to run the script rather than read it. Reference files by relative path from the skill directory.
 5. **Edit for decisions.** Keep only prose that changes what the agent does. State the instruction; add a reason only when the rule would be misapplied without one. Point at structural sources (types, READMEs, config) instead of restating them. Delegate to other skills by name instead of copying their content. Match the length to the scope of the task.
 6. **Validate.** Check that `name` matches the directory, `description` is present and specific, every referenced file exists, every script runs, and cross-skill references name skills that exist. For a skill whose behavior can be checked (it produces a file, a format, a command sequence), run it on one or two realistic prompts and read the output. For a skill whose effect on agent behavior is uncertain, run the Eval playbook (`playbooks/eval.md`). Skip behavioral testing only for purely stylistic skills, and say so.

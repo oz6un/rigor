@@ -15,6 +15,4 @@ You own the design and the result.
 7. If the design is contested, run `interrogate` before shipping.
 8. Run the Opening a PR playbook (`playbooks/opening-a-pr.md`).
 
-Tightly coupled work (one feature, one migration) goes to a single owner with the throughput checkpoint in its prompt; that owner fans out internally after the blocking steps. Fan out from the top level only for slices that produce independent artifacts (audits, cross-subsystem investigations, competing experiments). Rewrite the checkpoint at each phase boundary. To change an owner's direction substantially, start a fresh owner rather than stacking interruptions on the old one.
-
 **Reply:** what you built, what you chose and why, the throughput checkpoint, and open decisions. Use tables for design alternatives.

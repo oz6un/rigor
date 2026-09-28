@@ -22,6 +22,10 @@ mode_hook="$root/skills/rigor/scripts/mode-hook.py"
 mode="${1:-install}"
 
 ours() { [[ -L "$1" && "$(readlink "$1")" == "$root/"* ]]; }
+stamp="# installed by rigor's install.sh"
+# A Codex agent file is ours if it carries the stamp, or is an unstamped copy from an older install.
+ours_toml() { [[ -f "$2" ]] && { [[ "$(head -1 "$2")" == "$stamp"* ]] || cmp -s "$1" "$2"; }; }
+skipped=()
 
 link() {
   local target="$1" dest="$2"
@@ -29,6 +33,7 @@ link() {
     ln -sfn "$target" "$dest"
   elif [[ -e "$dest" || -L "$dest" ]]; then
     echo "skip $dest: already exists and isn't from this clone" >&2
+    skipped+=("$dest")
     return
   else
     ln -s "$target" "$dest"
@@ -42,10 +47,10 @@ uninstall() {
   done
   for toml in "$root"/codex/agents/*.toml; do
     dest="$codex_agents/$(basename "$toml")"
-    [[ -f "$dest" ]] && cmp -s "$toml" "$dest" && rm "$dest" && echo "removed $dest"
+    if ours_toml "$toml" "$dest"; then rm "$dest" && echo "removed $dest"; fi
   done
   for config in "$claude_settings" "$codex_hooks"; do
-    python3 "$root/scripts/hooks.py" remove "$config" "$mode_hook" && echo "removed rigor's hook from $config"
+    if python3 "$root/scripts/hooks.py" remove "$config" "$mode_hook"; then echo "removed rigor's hook from $config"; fi
   done
   return 0
 }
@@ -55,6 +60,10 @@ case "$mode" in
   install) ;;
   *) echo "usage: install.sh [--uninstall]" >&2; exit 2 ;;
 esac
+
+# Refuse to start on a config we can't parse, before changing anything.
+python3 "$root/scripts/hooks.py" check "$claude_settings" "$mode_hook"
+python3 "$root/scripts/hooks.py" check "$codex_hooks" "$mode_hook"
 
 mkdir -p "$claude_skills" "$codex_skills" "$claude_agents" "$codex_agents"
 
@@ -74,10 +83,23 @@ done
 for agent in "$root"/agents/*.md; do
   link "$agent" "$claude_agents/$(basename "$agent")"
 done
-cp "$root"/codex/agents/*.toml "$codex_agents/"
-python3 "$root/scripts/hooks.py" add "$claude_settings" "$mode_hook"
-python3 "$root/scripts/hooks.py" add "$codex_hooks" "$mode_hook"
+for toml in "$root"/codex/agents/*.toml; do
+  dest="$codex_agents/$(basename "$toml")"
+  if [[ -e "$dest" ]] && ! ours_toml "$toml" "$dest"; then
+    echo "skip $dest: already exists and isn't from this clone" >&2
+    skipped+=("$dest")
+    continue
+  fi
+  { echo "$stamp from $root"; cat "$toml"; } > "$dest"
+done
+python3 "$root/scripts/hooks.py" add "$claude_settings" "$mode_hook" || true
+python3 "$root/scripts/hooks.py" add "$codex_hooks" "$mode_hook" || true
 
+if [[ ${#skipped[@]} -gt 0 ]]; then
+  echo "WARNING: ${#skipped[@]} item(s) were skipped because you already have your own with the same name." >&2
+  echo "rigor will use yours in their place. Rename or remove them and rerun to use rigor's:" >&2
+  printf '  %s\n' "${skipped[@]}" >&2
+fi
 echo "Installed $count skills and $(ls "$root"/agents/*.md | wc -l | tr -d ' ') agents for Claude Code and Codex."
 echo "Codex only: open Codex, run /hooks, and trust rigor's two hooks (again after an update changes them)."
 echo "Then start a new session and type /rigor (Claude Code) or \$rigor (Codex). It stays on for the rest of that session."

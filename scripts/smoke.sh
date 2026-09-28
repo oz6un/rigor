@@ -34,7 +34,37 @@ check "install.sh into a throwaway home" env HOME="$tmp/home" CODEX_HOME="$tmp/h
 check "  skills linked for both hosts" test -f "$tmp/home/.claude/skills/rigor/SKILL.md" -a -f "$tmp/home/.agents/skills/how/SKILL.md"
 check "  agents installed for both hosts" test -f "$tmp/home/.claude/agents/rigor-agent.md" -a -f "$tmp/home/.codex/agents/rigor-agent.toml"
 check "  hooks registered for both hosts" grep -q mode-hook.py "$tmp/home/.claude/settings.json" "$tmp/home/.codex/hooks.json"
-check "  uninstall removes everything" bash -c "HOME='$tmp/home' CODEX_HOME='$tmp/home/.codex' '$root/install.sh' --uninstall >/dev/null && [ -z \"\$(find '$tmp/home/.claude/skills' '$tmp/home/.agents/skills' -mindepth 1)\" ] && [ ! -e '$tmp/home/.codex/hooks.json' ]"
+check "  uninstall removes everything" bash -c "HOME='$tmp/home' CODEX_HOME='$tmp/home/.codex' '$root/install.sh' --uninstall >/dev/null && [ -z \"\$(find '$tmp/home/.claude/skills' '$tmp/home/.agents/skills' -mindepth 1)\" ] && ! grep -q mode-hook.py '$tmp/home/.codex/hooks.json' '$tmp/home/.claude/settings.json'"
+
+h="$tmp/seeded"
+mkdir -p "$h/.claude" "$h/.codex/agents"
+cat > "$h/.claude/settings.json" <<'EOF'
+{
+  "statusLine": {"type": "command", "command": "echo café ✓"},
+  "hooks": {"UserPromptSubmit": [{"hooks": [
+    {"type": "command", "command": "python3 ~/tools/mode-hook.py"},
+    {"type": "command", "command": "echo keepme"}]}]}
+}
+EOF
+echo '{}' > "$h/.codex/hooks.json"
+echo '# my own agent' > "$h/.codex/agents/rigor-agent.toml"
+cp "$h/.claude/settings.json" "$tmp/settings.orig"
+same_json() { python3 -c 'import json,sys; sys.exit(json.load(open(sys.argv[1])) != json.load(open(sys.argv[2])))' "$1" "$2"; }
+check "install next to existing config" env HOME="$h" CODEX_HOME="$h/.codex" "$root/install.sh"
+check "  keeps the user's hooks and non-ASCII text" python3 -c '
+import json, sys
+d = json.load(open(sys.argv[1]))
+cmds = [x["command"] for g in d["hooks"]["UserPromptSubmit"] for x in g["hooks"]]
+assert "python3 ~/tools/mode-hook.py" in cmds and "echo keepme" in cmds, cmds
+assert d["statusLine"]["command"] == "echo café ✓"
+assert sum("skills/rigor/scripts/mode-hook.py" in c for c in cmds) == 1, cmds' "$h/.claude/settings.json"
+check "  skips the user's own Codex agent" grep -qx '# my own agent' "$h/.codex/agents/rigor-agent.toml"
+check "  a rerun adds no duplicate hook" bash -c "HOME='$h' CODEX_HOME='$h/.codex' '$root/install.sh' >/dev/null 2>&1 && [ \$(grep -c 'skills/rigor/scripts/mode-hook.py' '$h/.claude/settings.json') -eq 2 ]"
+check "  uninstall restores the user's config" bash -c "HOME='$h' CODEX_HOME='$h/.codex' '$root/install.sh' --uninstall >/dev/null"
+check "    settings.json back to the original" same_json "$h/.claude/settings.json" "$tmp/settings.orig"
+check "    the user's {} hooks.json is kept" grep -qx '{}' "$h/.codex/hooks.json"
+check "    the user's Codex agent is kept" grep -qx '# my own agent' "$h/.codex/agents/rigor-agent.toml"
+check "  a malformed config stops install before any change" bash -c "m='$tmp/bad'; mkdir -p \$m/.claude; echo '{ // nope' > \$m/.claude/settings.json; ! HOME=\$m CODEX_HOME=\$m/.codex '$root/install.sh' >/dev/null 2>&1 && [ ! -e \$m/.claude/skills ]"
 
 check "second-opinion.sh --help" "$s/rigor/scripts/second-opinion.sh" --help
 check "second-opinion.sh exits 3 without the other CLI" expect_exit 3 env PATH=/usr/bin:/bin bash -c "echo hi | '$s/rigor/scripts/second-opinion.sh' --cli codex"

@@ -3,7 +3,7 @@ description = "Subagent for work inside a rigor playbook step (code-writing dele
 developer_instructions = """
 You are a subagent working under the `rigor` skill.
 
-Before doing anything else, read the `rigor` skill's SKILL.md in full: `~/.claude/skills/rigor/SKILL.md` in Claude Code, `~/.agents/skills/rigor/SKILL.md` in Codex. It isn't in your skill list, so read the file. It includes the principle index; read the full principle file for each principle you apply.
+Before doing anything else, read the `rigor` skill's SKILL.md in full: `~/.claude/skills/rigor/SKILL.md` in Claude Code, `~/.agents/skills/rigor/SKILL.md` in Codex. It isn't in your skill list, so read the file. When a step names a principle, read it from the `principles` skill next to `rigor`.
 
 Work only on the scope your parent gave you. When you finish, report:
 
