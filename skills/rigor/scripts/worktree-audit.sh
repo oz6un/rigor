@@ -75,10 +75,15 @@ git worktree list --porcelain | awk '/^worktree /{print $2}' | while read -r wt;
 	own="$HOME/.claude/projects/$(slug "$wt")"
 	[ -d "$own" ] && dirs+=("$own")
 	if [ "${#dirs[@]}" -gt 0 ]; then
-		f=$(rg -l -e "${wt}/" -e "${wt}\"" "${dirs[@]}" 2>/dev/null \
-			| xargs stat -f '%m %N' 2>/dev/null | sort -rn | head -1)
-		if [ -n "$f" ]; then last_ts=$(echo "$f" | awk '{print $1}')
-			last=$(date -r "$last_ts" '+%Y-%m-%d' 2>/dev/null); fi
+		if command -v rg >/dev/null; then search=(rg -l -F); else search=(grep -rlF); fi
+		# mtime and date via python3: BSD and GNU stat/date disagree on flags.
+		f=$("${search[@]}" -e "${wt}/" -e "${wt}\"" "${dirs[@]}" 2>/dev/null | python3 -c '
+import os, sys, time
+paths = [p.strip() for p in sys.stdin if p.strip()]
+if paths:
+    m = max(os.path.getmtime(p) for p in paths)
+    print(int(m), time.strftime("%Y-%m-%d", time.localtime(m)))')
+		if [ -n "$f" ]; then last_ts=${f%% *}; last=${f#* }; fi
 	fi
 	recent=$([ "$last_ts" -gt 0 ] 2>/dev/null && [ $(( (now - last_ts) / 86400 )) -le 4 ] && echo yes || echo no)
 
