@@ -30,7 +30,7 @@ No new test is better than a bad one. A bad test mostly exercises mocks, encodes
 ## Constraints
 
 - Don't change a test to match a wrong implementation.
-- Don't weaken existing assertions unless the expected behavior has actually changed, and say why.
+- Change an existing test's expected value only where the request changes the behavior it checks, and name the test. If that's unclear, stop and report it as blocked.
 - Keep the test focused on the bug. Avoid unrelated fixture changes or coverage expansion.
 - If the bug is flaky, make the test deterministic where possible and say which signal it locks down.
 - If the bug belongs to a broader class of failures, land the focused regression test first, then consider tests for the related cases.

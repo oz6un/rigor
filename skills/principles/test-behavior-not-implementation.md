@@ -2,7 +2,7 @@
 
 A test should call the code the way its users do and assert what they observe against a literal expected value. A test that checks which calls the code made, or restates a constant from the code, does neither.
 
-Before keeping a test, ask: would it still pass if every function it imports returned `undefined`? If so, it observes no behavior and can't fail for a defect. Rewrite the assertion or delete the test.
+Before keeping a test you wrote, ask: would it still pass if every function it imports returned `undefined`? If so, it observes no behavior and can't fail for a defect. Rewrite the assertion or delete the test.
 
 **Why:** A test that can't catch a defect costs CI time and review attention and protects nothing. A test that restates a constant also breaks whenever someone legitimately edits that constant or prompt, so it blocks the change instead of checking it.
 
@@ -19,6 +19,6 @@ How to fix them: call the subject in the test body with one concrete input and a
 - For an absence, also assert the presence for a different input in the same test.
 - For a constant, test the code that reads it with one input instead of restating the value.
 - For a mock, assert the payload it received or the state after the call, not just that it was called.
-- If no such assertion is possible, delete the test.
+- If no such assertion is possible, delete the test you wrote. An existing test is deleted only when the code it tests is deleted (see [migrate-callers-then-delete-legacy-apis](migrate-callers-then-delete-legacy-apis.md)).
 
 Keep tests that check a relation across a table's rows (a key present in two tables, a parent that exists) and compile-time checks in `*.test-d.ts` files.

@@ -46,7 +46,7 @@ Can you tell from reading it that the code works?
 
 - Are there tests, and do they test behavior rather than implementation details?
 - Are there assertions or invariants that would catch a regression?
-- For a bug fix, is there a test that reproduces the bug?
+- For a bug fix, is there a test that reproduces the bug, or a stated reason there isn't one?
 - For a change at an integration boundary, is the full path tested?
 - Does the code check the real value, or a proxy for it (a file's mtime, cached state)?
 - For delegated or async work, does the code check the actual output, or trust a self-report?
