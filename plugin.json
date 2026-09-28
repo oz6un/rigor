@@ -1,13 +1,18 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "mstack",
-  "version": "0.1.1",
+  "version": "0.1.3",
   "description": "Rigorous engineering workflows for coding agents: playbooks, principles, multi-model review, and verification. Ported from pstack.",
-  "author": { "name": "oz6un" },
+  "author": {
+    "name": "oz6un"
+  },
   "license": "MIT",
   "extensions": {
     "com.openai": {
-      "interface": { "displayName": "mstack", "category": "Coding" }
+      "interface": {
+        "displayName": "mstack",
+        "category": "Coding"
+      }
     }
   }
 }

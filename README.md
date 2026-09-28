@@ -128,6 +128,11 @@ codex/agents/          Codex custom agents, plus install-agents.sh
 docs/guide/            Walkthrough
 ```
 
+## Development
+
+- `python3 scripts/check.py` checks skill frontmatter, links between skills, playbooks and principles, that the two principle indexes match, and that the manifest versions match.
+- `scripts/reinstall.sh` runs the check, bumps the patch version, and refreshes the installed plugin in Claude Code and Codex. Both hosts cache the plugin by version, so edits don't show up until the version changes.
+
 ## License
 
 MIT. Includes work from pstack (Lauren Tan) and cursor-team-kit (Cursor), both MIT.

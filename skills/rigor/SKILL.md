@@ -12,10 +12,12 @@ Once invoked, rigor stays on for the rest of the session. Apply it to each new t
 ## How to start a task
 
 1. Match the task to a playbook in the [Playbooks](#playbooks) list and open its file.
-2. Start a todo list whose first items are that playbook's steps, copied verbatim. Add task-specific items after them. If you decide to skip a step, keep it in the list and mark it `skip: <reason>`.
-3. Read the `principles` skill's index, then the full principle file for each one you apply.
+2. Start a todo list whose first items are that playbook's steps, copied verbatim. Add task-specific items after them. If you decide to skip a step, keep it in the list and mark it `skip: <reason>`. Use the host's todo or plan tool; if there isn't one, keep the list in your messages.
+3. Pick the principles that apply from the [index below](#principles) and read the full file for each one.
 4. Work through the steps, calling the supporting skills below when a step needs them.
 5. Finish with a reply written per [Writing the reply](#writing-the-reply).
+
+Scale the process to the task. When the change is a few lines in one or two files and the approach is obvious (for a bug, the cause is confirmed by a reproduction), do it yourself: mark delegation, `how`, `why`, `architect`, and design-panel steps `skip: small task` rather than running them for show. Delegation exists so someone other than the author checks the code, so a small change you write yourself still needs a before/after runtime check or test; without one, have a read-only subagent review the diff. Reproduction, verification, and independent verifiers (Shipping, verification rounds) are never skipped for size. Never mark a step done, or report it done, unless it happened.
 
 In the reply, name each principle that changed a decision and what it changed. Only cite principles whose file you read in this session.
 
@@ -32,10 +34,10 @@ In the reply, name each principle that changed a decision and what it changed. O
 | Any prose: replies, docs, PR descriptions, comments | `unslop`; for docs, RFCs, READMEs, PR descriptions, and commit messages also `technical-writing` |
 | Before committing | `deslop` |
 | Before requesting review | `no-comments` |
-| Verifying a UI, CLI, or TUI change | `control-ui` or `control-cli`. For bug fixes, reproduce on the same surface yourself before fixing. |
+| Verifying a UI, CLI, or TUI change | `control-ui` or `control-cli` |
 | Checking on a PR ("check on PR 123", "get it green", "address the review comments") | The Babysit playbook. Opening a PR does not trigger it. |
-| Landing a green stack | The Shipping playbook. Passing CI doesn't prove correctness, so each PR gets an independent verdict before anything merges, and only the contiguous verified run from the bottom of the stack lands. |
-| An automated reviewer commented on the PR | Assess each comment on its merits. Review bots find real bugs and also file noise. Fix, dismiss with a concrete reason, or ask, per `references/review-bot-triage.md`. |
+| Landing a green stack | The Shipping playbook |
+| An automated reviewer commented on the PR | `references/review-bot-triage.md` |
 | Long, autonomous, or multi-phase work, or anything the user will review after stepping away | `show-me-your-work` to keep a decision log. Commit the log when the stakes need an auditable record. |
 | A skill turns out to be broken mid-task | Fix it in a separate PR. Don't silently work around it, and don't let it block the task. |
 | Nontrivial multi-step work | Write the throughput checkpoint (Feature playbook, step 3) |
@@ -47,7 +49,7 @@ When you're about to ask "which approach?" or "what should this do?", classify t
 - If the answer is something you could observe by running code (behavior, timing, layout, output, performance, whether an eval separates two variants), it isn't the user's question to answer. Build a quick sketch with the Prototype playbook and let the result decide.
 - If the task is a read-only investigation, answer from the evidence instead of building a sketch.
 - Ask only about product or preference calls that no experiment can settle.
-- Under full autonomy ("don't stop", "I'm going to bed"), make the calls the grant covers and report them. For a call only the user can make, pick a sensible default, explain it fully in the report, and say what reply would reverse it. Gates the user named, and the "always pause" list below, still need the user.
+- Under full autonomy, see [Autonomy](#autonomy).
 
 ## Principles
 
@@ -97,7 +99,7 @@ Proceed without asking on reversible work and routine external actions: using MC
 
 Always pause before irreversible actions: force-pushing a shared branch, deploying, deleting data, messaging customers.
 
-When the user says "don't stop", "I'm going to bed", "run until done", or "be fully autonomous", keep going without check-ins until the task is done or you hit an always-pause action.
+When the user says "don't stop", "I'm going to bed", "run until done", or "be fully autonomous", keep going without check-ins until the task is done or you hit an always-pause action. Make the calls the grant covers and report them. For a call only the user can make, pick a sensible default, explain it in the report, and say what reply would reverse it. Gates the user named still need the user.
 
 Give your real opinion. When asked whether to do something, invited to add scope, or shown an approach, say so if it's a bad idea or not worth the cost. A recommendation is a judgment, not an agreement.
 
@@ -116,7 +118,7 @@ Defaults for every subagent:
 - Pass file paths, not pasted file contents.
 - Match the model to the job. The hardest changes (cross-cutting design, tricky concurrency, subtle algorithms) go to your strongest model. Mechanical edits can go to a faster, cheaper model. In Claude Code, set the Agent tool's `model`; in Codex, set `model` and `model_reasoning_effort` on the spawn.
 
-**Second opinions from another model.** A second opinion is the same prompt run against a different model, and agreement between them is a strong signal. Get one from the other CLI with the `second-opinion.sh` script in this skill's `scripts/` directory: from Claude Code it runs `codex exec`, from Codex it runs `claude -p`, read-only by default.
+**Second opinions from another model.** A second opinion is the same prompt run against a different model, and agreement between them is a strong signal. Get one from the other CLI with the `second-opinion.sh` script in this skill's `scripts/` directory (other skills refer to it as `../rigor/scripts/second-opinion.sh`; resolve it to an absolute path from the skill's base directory before running it from the repo): from Claude Code it runs `codex exec`, from Codex it runs `claude -p`, read-only by default.
 
 ```bash
 scripts/second-opinion.sh < prompt.txt          # read-only review

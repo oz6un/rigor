@@ -8,7 +8,7 @@ All PR operations use the GitHub CLI (`gh`). Don't require Graphite (`gt`).
 
 1. **Declare the mode before the first poll.**
    - `drive`: loop until merge-ready. For "babysit this", "get it green", "make it merge-ready". The default when no mode is stated.
-   - `background`: triage without blocking. For a plan that is still executing.
+   - `background`: triage without blocking. For a plan that is still executing. A subagent working one phase of a larger plan uses this, never `drive`: `drive` loops until merge-ready, so the subagent would never finish its turn.
    - `threads-only`: answer review comments and change nothing else. For "address the review comments".
    - `check`: one status pass and a report. For "check on X" and "is it green". Small or docs-only PRs get `check`, not `drive`.
 2. **Work the merge frontier and nothing above it.** The lowest unmerged PR is the only one that matters until it merges. Read and batch threads on PRs above it, but don't fix them if the push would restart the frontier's checks. If you find yourself working upstack while the frontier is red, go back down.

@@ -1,6 +1,6 @@
 ---
 name: automate-me
-description: Turn the user's working conventions into a personal <name>-mode skill that routes work through rigor, mined from their Claude Code and Codex transcripts plus a few direct questions. Use for "automate me", "create/update my -mode skill", or "capture how I work in a skill".
+description: Turn the user's working conventions into a personal <name>-mode skill that routes work through rigor, mined from their Claude Code and Codex transcripts plus a few direct questions. Use for "automate me", "create/update my -mode skill", or "capture how I work in a skill". Invoke only when the user asks.
 disable-model-invocation: true
 ---
 
@@ -29,7 +29,7 @@ In update mode:
 
 Scope transcripts to the current project. Reading every project's history pulls in private conversations unrelated to this work.
 
-- **Claude Code:** `~/.claude/projects/<slug>/*.jsonl`, where `<slug>` is the project's absolute path with `/` (and `.`) replaced by `-`, for example `/Users/jay/code/app` becomes `-Users-jay-code-app`.
+- **Claude Code:** `~/.claude/projects/<slug>/*.jsonl`, where `<slug>` is the project's absolute path with every non-alphanumeric character replaced by `-` (see the `recall` skill for both hosts' layouts), for example `/Users/jay/my_app` becomes `-Users-jay-my-app`.
 - **Codex:** `~/.codex/sessions/YYYY/MM/DD/rollout-*.jsonl`. Sessions aren't grouped by project, so keep only files whose first line (a `session_meta` event) has `payload.cwd` inside this project.
 
 Both formats are JSON lines with one event per line. Check a few lines before writing extraction code, since the schemas change between versions. User turns are the main signal (Claude Code: `"type":"user"` entries; Codex: `response_item` messages with `role: "user"`), and the agent's replies give the context for each correction.

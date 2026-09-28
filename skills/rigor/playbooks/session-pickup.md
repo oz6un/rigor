@@ -3,7 +3,7 @@
 You own the resume point. Read what the previous agent did and continue from there; don't redo it.
 
 1. Find the prior trail. It can be a transcript file, a pushed branch, or a PR.
-   - Claude Code transcripts are `~/.claude/projects/<project-slug>/*.jsonl`, where the slug is the project's absolute path with `/` replaced by `-`. Look only in the current project's directory. Globbing across `~/.claude/projects/*/` reads private sessions from unrelated projects.
+   - Claude Code transcripts are `~/.claude/projects/<project-slug>/*.jsonl`, where the slug is the project's absolute path with every non-alphanumeric character replaced by `-`. Look only in the current project's directory. Globbing across `~/.claude/projects/*/` reads private sessions from unrelated projects.
    - Codex transcripts are `~/.codex/sessions/YYYY/MM/DD/rollout-*.jsonl`. Keep only sessions whose recorded working directory is this project. To continue a Codex session in place, `codex resume` lists and reopens them.
    - For a branch or PR, read `gh pr view <pr> --comments`, the PR body, and `git log` on the branch.
 

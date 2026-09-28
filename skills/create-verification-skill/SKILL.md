@@ -23,7 +23,7 @@ Answer these from the codebase. Ask the user only what you can't observe.
 - **Run.** How does the app start locally? Prefer the repo's documented dev command (package scripts, Makefile, README). Note ports, env vars, seed data, and auth.
 - **Drive.** How can an agent interact with it programmatically? Look for existing harnesses first: Playwright or Cypress specs, expect scripts, PTY helpers, curl-able endpoints, a debug port. Only then fall back to a generic recipe: browser automation or CDP for web and Electron (the `control-ui` skill), tmux or a PTY for CLI and TUI (the `control-cli` skill), plain HTTP for services.
 - **Observe.** What evidence can be captured: screenshots, terminal transcripts, response bodies, logs, exit codes, database state?
-- **Isolate.** Can two instances run side by side (separate ports, data dirs, profiles)? If not, the generated skill must say so and refuse to drive an instance it didn't start, since double-driving a shared instance can corrupt the user's session.
+- **Isolate.** Can two instances run side by side (separate ports, data dirs, profiles)? If not, the generated skill must say so and refuse to drive a shared instance that another session is already driving, since double-driving a shared instance can corrupt the user's session.
 
 If the checkout doesn't build or start as-is, fix that first or report the failure precisely. A skill written against a broken base teaches wrong steps. When an irrelevant missing asset blocks startup (a static dir the API never serves, a sample config), the generated skill may create it, marked as verification scaffolding, and remove it in cleanup.
 

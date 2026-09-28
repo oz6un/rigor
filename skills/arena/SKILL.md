@@ -11,7 +11,7 @@ Start a todo list with one item per phase before launching anything: Frame, Fan 
 
 ## Phase A: Frame
 
-Every candidate gets the same prompt, so the prompt is the contract.
+Every candidate gets the same prompt, so the prompt is the contract. Host candidates may add one direction line each to spread the attempts, since they share a model.
 
 1. State the artifact each candidate produces.
 2. Write the rubric: what success looks like for this task, as 3-6 concrete criteria you can score. The rubric is for you and the judge in Phases C and D. Candidates only see the task.

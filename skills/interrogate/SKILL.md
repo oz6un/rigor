@@ -5,7 +5,7 @@ description: Adversarial multi-model code review. Independent reviewers (host su
 
 # Interrogate
 
-Have several independent reviewers attack a change, then deliver one verdict. Every reviewer gets the same prompt, rubric, and code-quality lens. The strongest signal comes from a reviewer on a different model family, so the panel always includes one from the other CLI when it's installed.
+Have several independent reviewers attack a change, then deliver one verdict. Every reviewer gets the same prompt, rubric, and code-quality lens; the host reviewers add a focus line so two runs of the same model don't just agree. The strongest signal comes from a reviewer on a different model family, so the panel always includes one from the other CLI when it's installed.
 
 The deliverable is a verdict. Don't apply any changes.
 

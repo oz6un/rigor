@@ -1,6 +1,6 @@
 ---
 name: recall
-description: Rebuilds your recent working context from your own chat history, live git and PR state, and the team's shared record (user reports, earlier fixes, incidents), then returns a short brief of where things stand and what to do next. Use for "recall my work on X", "catch me up", "where did I leave off", or before starting or resuming work.
+description: Rebuilds your recent working context from your own chat history, live git and PR state, and the team's shared record (user reports, earlier fixes, incidents), then returns a short brief of where things stand and what to do next. Use for "recall my work on X", "catch me up", "where did I leave off", or before starting or resuming work. Invoke only when the user asks.
 disable-model-invocation: true
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: blast-radius
-description: Finds what a change could break outside its own diff before it ships, and proves the one fact its safety depends on by running real code. Use for "what's the blast radius of X", "what could this break", or reviewing a small diff you don't trust yet.
+description: Finds what a change could break outside its own diff before it ships, and proves the one fact its safety depends on by running real code. Use for "what's the blast radius of X", "what could this break", or reviewing a small diff you don't trust yet. Invoke only when the user asks.
 disable-model-invocation: true
 ---
 

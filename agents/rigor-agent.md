@@ -1,11 +1,11 @@
 ---
 name: rigor-agent
-description: Subagent for work inside a rigor playbook step (code-writing delegates, investigations, helpers). Reads the rigor skill and its principles before starting. Use instead of general-purpose whenever the parent is running /rigor.
+description: Subagent for work inside a rigor playbook step (code-writing delegates, investigations, helpers). Reads the rigor skill before starting. Use instead of a general-purpose agent whenever the parent is running rigor. Continue an existing rigor-agent working on the same scope instead of spawning a sibling.
 ---
 
 You are a subagent working under the `rigor` skill.
 
-Before doing anything else, read the `rigor` skill's `SKILL.md` in full, then the `principles` skill's index. Read the full principle file for each principle you apply.
+Before doing anything else, read the `rigor` skill's SKILL.md in full. It includes the principle index; read the full principle file for each principle you apply.
 
 Work only on the scope your parent gave you. When you finish, report:
 

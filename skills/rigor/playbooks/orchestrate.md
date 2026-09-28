@@ -74,7 +74,7 @@ STANDING     <preferences.md pasted verbatim>
 ## Queue and drain
 
 - When a subagent finishes, run `orch inbox push <agent> <unit> <status> [--report PATH]` and go back to what you were doing. Don't review its work inline; if it needs review, that's a verifier unit.
-- Drain in batches at four points: after finishing a critical section, at a track rollup, when a frontier watcher wakes you, and before a report to the user. Start each batch with `orch inbox drain`. Anything that arrives during a drain waits for the next one.
+- Drain in batches at four points: after finishing a critical section, at a track rollup, when a frontier watcher wakes you (always with a long heartbeat fallback, in case the watcher dies silently), and before a report to the user. Start each batch with `orch inbox drain`. Anything that arrives during a drain waits for the next one.
 - Critical sections you finish before draining: writing a brief, a stack operation, a conflict decision, writing a gate, updating the ledger or frontier.
 - In each drain, classify every pointer (landed, needs-verify, failed, zombie, noise), record the results with `orch unit add`, `orch unit set`, and `orch ledger record`, run `orch status`, then spawn the next wave in one message.
 - At each rollup, account for every spawned child: arrived, respawned, or scope explicitly absorbed. Quietly redoing a missing child's work hides the waste and the gap.
@@ -155,19 +155,20 @@ At each tick:
 ### Liveness
 
 - Never resume an agent just to check on it; a resume restarts an idle agent. Probe read-only: the ledger, `units.tsv`, `gh`, pushed branches, and the host's list of running tasks where it has one. A transcript file's modification time doesn't prove the agent is alive.
+- Don't wait for every child to go quiet before replanning; act on each result as it arrives.
 - Count only side effects as progress: commits, pushes, PR or check changes, reports in the store.
 - Every owner keeps a `children.tsv` next to its `decisions.tsv`: one row per subagent with its id, expected runtime (at least the longest previous run of that kind), and state.
-- A lane or subagent that errors, or passes its expected runtime without a side effect, is stuck. Stand it down, have its owner record it as stuck, and dispatch a replacement at once if the work is still needed (the root does this when the owner can't). A stall never proves the work and never drops it.
+- A lane or subagent that errors, or passes its expected runtime without a side effect, is stuck. Stand it down, have its owner record it as stuck, and dispatch a replacement at once if the work is still needed (the root does this when the owner can't). A replacement that stalls gets the same treatment. A stall never proves the work and never drops it.
 
 ### Owner lifecycle (Autopilots)
 
 One owner subagent per PR carries it from build through babysit:
 
 1. Within about 15 minutes: push the first branch snapshot, open the PR as ready (not draft) before self-proof, and start `decisions.tsv` (per `show-me-your-work`) and `children.tsv`. Keep both logs uncommitted and return them with each report.
-2. Prove the change on the real artifact (the `prove-it-works` principle).
+2. Prove the change on the real artifact (the `prove-it-works` principle). This self-proof runs after the code-ready report; see step 7.
 3. Triage automated reviewer comments skeptically per the rigor skill's `references/review-bot-triage.md`.
 4. Run `deslop`, then `no-comments`.
-5. Rebase onto current trunk once before the code-ready report, whether or not trunk moved. Keep that merge base during fix rounds. Rebase again only at merge prep, on a `git merge-tree` conflict with trunk, or on a CI failure caused by a change on trunk. Publish a rebase by pushing only the owner's own branch with `git push --force-with-lease`, after checking the remote head with `git ls-remote`. Never force-push a shared branch.
+5. Autopilot (stack) owners skip this step: they never rebase, because the root is the only one that changes the stack's shape. Everyone else: rebase onto current trunk once before the code-ready report, whether or not trunk moved. Keep that merge base during fix rounds. Rebase again only at merge prep, on a `git merge-tree` conflict with trunk, or on a CI failure caused by a change on trunk. Publish a rebase by pushing only the owner's own branch with `git push --force-with-lease`, after checking the remote head with `git ls-remote`. Never force-push a shared branch.
 6. Before any push that starts a verification round, run the pre-review checks that the repo's `CLAUDE.md` or `AGENTS.md` files name for the touched paths, on the committed head. A passing hook isn't proof.
 7. When the code is final (after `deslop` and `no-comments`), report the code-ready head SHA, and report the SHA of every later push that changes the patch. Self-proof, CI, and babysit (`playbooks/babysit.md`) then run in parallel with the root's verification.
 8. Report ready (merge-ready or stack-ready, per the playbook) with the head SHA once self-proof, CI, and babysit have finished.
