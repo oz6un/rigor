@@ -9,4 +9,4 @@ You own the answer. Investigations are read-only: they produce a cited explanati
 
 No PR, no Babysit, and no `architect` unless the investigation precedes a code change. If it does, finish the investigation, report back, and stop. The change is a new task under the Bug fix or Feature playbook.
 
-**Reply:** the investigation output. For "are we sure?" questions, give your actual judgment with reasons, and say so if the premise is wrong (see Autonomy in `SKILL.md`).
+**Reply:** the investigation output. For "are we sure?" questions, give your actual judgment with reasons, and say so if the premise is wrong (see "The user's rules" in `SKILL.md`).

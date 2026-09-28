@@ -10,7 +10,7 @@ Other skills named here don't appear in the model's skill list. To use one, read
 
 When a task matches no playbook, design one. The first deliverable, before any code, is the workflow: a sequence of phases sized to the task's risk, run as a series of experiments, that leaves a decision log the user can audit after stepping away.
 
-Start a todo list whose first item is reading the Principles section of the `rigor` skill. Then add the phases below.
+Start a todo list whose first item is reading the `principles` skill's index. Then add the phases below.
 
 ## Phase A: Frame
 

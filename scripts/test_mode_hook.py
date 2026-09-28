@@ -33,7 +33,7 @@ steps = [
     ("/rigor turns it on", prompt("/rigor fix the bug"), "rigor is on for this session."),
     ("later turn keeps it on", prompt("now the next task"), "rigor is on for this session."),
     ("compaction asks for a re-read", start("compact"), "just compacted"),
-    ("a second compaction right away doesn't ask again", start("compact"), "rigor is on for this session. New task"),
+    ("a second compaction right away doesn't ask again", start("compact"), "never weaken a test"),
     ("a fresh startup says nothing", start("startup"), None),
     ("other sessions stay off", prompt("next task", session="s2"), None),
     ("$rigor turns Codex sessions on", prompt("$rigor go", session="s2"), "rigor is on for this session."),

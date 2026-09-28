@@ -32,9 +32,9 @@ def reminder(event_name, source):
         return (f"rigor is on for this session and the context was just {'compacted' if source == 'compact' else 'resumed'}. "
                 f"Before continuing, re-read {SKILL} in full; its text may be missing or cut short. "
                 'Stay in the playbook you were running. The user can turn rigor off by saying "rigor off".')
-    return ("rigor is on for this session. New task that matches a rigor playbook or needs care: "
-            f"follow the rigor skill (re-read {SKILL} if it's no longer in context). "
-            "Casual turn: don't.")
+    return ("rigor is on for this session. For a new task that needs care, pick its rigor playbook "
+            f"({SKILL}; re-read it if it's no longer in context). Back every \"done\" with evidence from this "
+            "session, and never weaken a test to make it pass. Casual turn: skip rigor.")
 
 
 def main():

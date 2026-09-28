@@ -4,7 +4,7 @@ You own the plan, not the code. The plan is a checklist that an owner works thro
 
 1. If the change is one or two files with an obvious approach, skip the plan. Say so and stop.
 2. Settle open questions with prototypes before writing. Run `playbooks/prototype.md` for each, and keep the branch, SHA, and screenshots for Appendix A. Ask the user only about product or preference calls that no experiment can settle, and offer options (the `never-block-on-the-human` principle).
-3. Explore with `rigor-agent` subagents, choosing the model per the rigor skill's "Subagents and models" section (the `guard-the-context-window` principle). Each returns file pointers, conventions, test commands, and entry points, not pasted file contents.
+3. Explore with `rigor-agent` subagents, per the rigor skill's "Subagents" section (the `guard-the-context-window` principle). Each returns file pointers, conventions, test commands, and entry points, not pasted file contents.
 4. Copy the skeleton below into the plan file and fill every placeholder. Unless the user names a path, write it to `~/.rigor/plans/<program-slug>.md`. Keep every heading and sub-block in the order shown, with one section per PR. One PR is one change with its own evidence (the `sequence-verifiable-units` principle). Name the execution playbook in **How to read this**: choose between `playbooks/autopilot-full.md` and `playbooks/autopilot-stack.md` using the rule at the top of `playbooks/autopilot-stack.md`, or use `playbooks/orchestrate.md` for a standing program.
 5. Write it following `technical-writing`, then run `unslop` over it. The body is a how-to; the appendices hold explanation and reference. Each heading states the task or the finding. The check script rejects curly quotes.
 6. Run `node <rigor skill dir>/scripts/check-plan.mjs <plan.md>` and fix every line it prints (the `encode-lessons-in-structure` principle).
@@ -42,7 +42,7 @@ Tests alone are not sufficient verification. A PR is verified only when its unit
 ### Arm the program
 
 - [ ] State the protocol and this plan to the user, then stop. Start execution only on the user's explicit go.
-- [ ] On the user's go, arm the objective with this exact text, as `/goal` in Codex or in the `/loop` tick prompt in Claude Code. "<The plan path, the PR ids in order, the verification rule, who merges, and the done condition.>"
+- [ ] On the user's go, arm the objective with this exact text, as `/goal` (both hosts). "<The plan path, the PR ids in order, the verification rule, who merges, and the done condition.>"
 - [ ] Read these at program start and again at every tick.
   - [ ] The rigor skill's `playbooks/<execution playbook>.md` from the installed skills
   - [ ] The `swarm` skill from the installed skills

@@ -81,16 +81,16 @@ for path in docs:
             if leftover.search(line):
                 problems.append(f"{rel}:{n}: leftover term: {line.strip()[:80]}")
 
-rigor_section = re.search(r"^## Principles\n(.*?)^## ", (skills / "rigor" / "SKILL.md").read_text(), re.S | re.M).group(1)
-rigor_index = dict(re.findall(r"^- `([a-z0-9-]+)`: (.*)$", rigor_section, re.M))
-principles_index = dict(re.findall(r"^- \[`?([a-z0-9-]+)`?\]\([a-z0-9-]+\.md\): (.*)$", (skills / "principles" / "SKILL.md").read_text(), re.M))
-for label, index in (("rigor/SKILL.md", rigor_index), ("principles/SKILL.md", principles_index)):
-    if set(index) != principles:
-        problems.append(f"{label} principle index differs from files: "
-                        f"missing {sorted(principles - set(index))}, extra {sorted(set(index) - principles)}")
-for name in sorted(set(rigor_index) & set(principles_index)):
-    if rigor_index[name] != principles_index[name]:
-        problems.append(f"principle {name}: summary differs between rigor/SKILL.md and principles/SKILL.md")
+principles_index = set(re.findall(r"^- \[`?([a-z0-9-]+)`?\]\([a-z0-9-]+\.md\)", (skills / "principles" / "SKILL.md").read_text(), re.M))
+if principles_index != principles:
+    problems.append(f"principles/SKILL.md index differs from files: "
+                    f"missing {sorted(principles - principles_index)}, extra {sorted(principles_index - principles)}")
+
+# rigor's SKILL.md is in context on every rigor turn, and Claude Code re-attaches only its first
+# 5,000 tokens after compaction. Keep it well under that (about 4 characters per token).
+rigor_chars = len((skills / "rigor" / "SKILL.md").read_text())
+if rigor_chars > 8000:
+    problems.append(f"skills/rigor/SKILL.md is {rigor_chars} chars; keep it under 8000 (~2k tokens)")
 
 for md in sorted((root / "agents").glob("*.md")):
     toml = root / "codex" / "agents" / f"{md.stem}.toml"

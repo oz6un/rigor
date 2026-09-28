@@ -130,7 +130,7 @@ These apply to Orchestrate and to both Autopilot playbooks. In the Autopilots, t
 ### Operator gates
 
 - **State, then wait.** A request to state the protocol or plan is not a go. Deliver it and stop.
-- **Arm the objective on the go.** Write the program objective (plan path, PR ids in order, verification rule, who merges, done condition) to the store. In Claude Code, include it in the `/loop` tick prompt below. In Codex, arm `/goal <objective>` so the session keeps working across turns until done.
+- **Arm the objective on the go.** Write the program objective (plan path, PR ids in order, verification rule, who merges, done condition) to the store. Arm `/goal <objective>` (both hosts) so the session keeps working across turns until done.
 - **User-reserved items** stop at merge-ready; the user merges them.
 - **Stop means stop.** A hold from the user goes to every owner at once as a zero-writes order; owners keep their briefs until released.
 

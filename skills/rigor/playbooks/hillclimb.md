@@ -9,7 +9,7 @@ The rule for every iteration: one change, one measurement, then keep or revert. 
 3. Start the decision log with the `show-me-your-work` skill: a `decision.tsv` with one row per attempt and columns id, hypothesis, change, before, after, delta, tests, verdict (kept or reverted), note. Read it before each attempt. Keep it out of the repo (gitignored).
 4. Ground each hypothesis in the architecture from step 1, so it names a specific mechanism ("defer X off the boot path because it blocks first paint") rather than "try memoizing something".
 5. Loop, one hypothesis per iteration:
-   - Hand the change to a `rigor-agent` subagent with a tight scope, and review its diff rather than writing it yourself (the `guard-the-context-window` principle). When several independent hypotheses are open, run them in parallel subagents, each in its own worktree (the `separate-before-serializing-shared-state` principle).
+   - Make the change. When several independent hypotheses are open, you may test them in parallel subagents, each in its own worktree (the `separate-before-serializing-shared-state` principle).
    - Measure before and after with the frozen harness, and run the regression gate.
    - Keep the change only when the metric moves by more than the noise and the gate stays green. Otherwise revert it completely; a tweak that "might help" is not kept.
    - Make one commit per accepted change, staging only the files you changed (`git add <files>`, not `git add -A`). Log the row whether the change was kept or reverted.

@@ -16,7 +16,7 @@ flowchart TD
     E & F & G & H & I & J --> K[Verify and report]
 ```
 
-These are the common routes. The full list, including hillclimbing a metric, runtime and trace forensics, prototypes, visual parity, skill authoring and evals, babysitting and shipping PRs, autopilot queues, orchestration, session pickup, and worktree cleanup, is in [the rigor skill](../../skills/rigor/SKILL.md#playbooks).
+These are the common routes. The full list, including hillclimbing a metric, runtime and trace forensics, prototypes, visual parity, skill authoring and evals, babysitting and shipping PRs, autopilot queues, orchestration, session pickup, and worktree cleanup, is in [the rigor skill](../../skills/rigor/SKILL.md#start-a-task).
 
 ## Say the goal, not the process
 
