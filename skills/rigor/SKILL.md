@@ -108,7 +108,7 @@ Give your real opinion. When asked whether to do something, invited to add scope
 For subagents spawned inside a playbook step (code-writing delegates, helpers), use the `rigor-agent` subagent so the delegate follows this skill too.
 
 - In Claude Code, use the Agent tool with `subagent_type: "rigor-agent"`. Plain lookups can use `Explore`.
-- In Codex, spawn the `rigor-agent` custom agent (installed from this plugin's `codex/agents/`). If it isn't installed, tell the subagent to read this file before starting.
+- In Codex, spawn the `rigor-agent` custom agent (installed by rigor's `install.sh`). If it isn't installed, tell the subagent to read this file before starting.
 
 Skills that run their own panels (`how`, `why`, `architect`, `arena`, `swarm`, `interrogate`, `reflect`) choose their own subagents. Follow what they say.
 
@@ -125,7 +125,7 @@ Defaults for every subagent:
 <rigor skill dir>/scripts/second-opinion.sh --write < prompt.txt  # allow edits (use a separate worktree)
 ```
 
-Exit code 3 means the other CLI isn't installed: run that seat as a host subagent and say so in the report (a skill may add specifics, such as interrogate's reviewer without a focus line). `MSTACK_CODEX_MODEL` and `MSTACK_CLAUDE_MODEL` override the models it uses.
+Exit code 3 means the other CLI isn't installed: run that seat as a host subagent and say so in the report (a skill may add specifics, such as interrogate's reviewer without a focus line). `RIGOR_CODEX_MODEL` and `RIGOR_CLAUDE_MODEL` override the models it uses.
 
 You own every subagent's work. Read the diff yourself and write your own summary instead of relaying the subagent's. If a subagent was interrupted and resumed, its later instructions can get lost, so start a fresh subagent with the consolidated scope instead of trusting its "done".
 

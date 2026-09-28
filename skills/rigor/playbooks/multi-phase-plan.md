@@ -5,7 +5,7 @@ You own the plan, not the code. The plan is a checklist that an owner works thro
 1. If the change is one or two files with an obvious approach, skip the plan. Say so and stop.
 2. Settle open questions with prototypes before writing. Run `playbooks/prototype.md` for each, and keep the branch, SHA, and screenshots for Appendix A. Ask the user only about product or preference calls that no experiment can settle, and offer options (the `never-block-on-the-human` principle).
 3. Explore with `rigor-agent` subagents, choosing the model per the rigor skill's "Subagents and models" section (the `guard-the-context-window` principle). Each returns file pointers, conventions, test commands, and entry points, not pasted file contents.
-4. Copy the skeleton below into the plan file and fill every placeholder. Unless the user names a path, write it to `~/.mstack/plans/<program-slug>.md`. Keep every heading and sub-block in the order shown, with one section per PR. One PR is one change with its own evidence (the `sequence-verifiable-units` principle). Name the execution playbook in **How to read this**: choose between `playbooks/autopilot-full.md` and `playbooks/autopilot-stack.md` using the rule at the top of `playbooks/autopilot-stack.md`, or use `playbooks/orchestrate.md` for a standing program.
+4. Copy the skeleton below into the plan file and fill every placeholder. Unless the user names a path, write it to `~/.rigor/plans/<program-slug>.md`. Keep every heading and sub-block in the order shown, with one section per PR. One PR is one change with its own evidence (the `sequence-verifiable-units` principle). Name the execution playbook in **How to read this**: choose between `playbooks/autopilot-full.md` and `playbooks/autopilot-stack.md` using the rule at the top of `playbooks/autopilot-stack.md`, or use `playbooks/orchestrate.md` for a standing program.
 5. Write it following `technical-writing`, then run `unslop` over it. The body is a how-to; the appendices hold explanation and reference. Each heading states the task or the finding. The check script rejects curly quotes.
 6. Run `node <rigor skill dir>/scripts/check-plan.mjs <plan.md>` and fix every line it prints (the `encode-lessons-in-structure` principle).
 7. Hand back the plan path and the script's output, then stop. Execution starts on the user's explicit go, under the playbook the plan names.
@@ -20,7 +20,7 @@ You own the plan, not the code. The plan is a checklist that an owner works thro
 
 **Control skill.** Choose by surface: `control-ui` for browser, Electron, and web UIs; `control-cli` for CLIs and TUIs; the repo's own simulator-driving skill for native mobile. A PR that touches two surfaces gets lanes on both. A surface with no control skill is a risk in Appendix C, and its live block still says how each lane drives it.
 
-**Re-reads.** The plan tells the program to re-read its rules at every tick. Files in the repo are read from trunk with `git show origin/main:<path>`; mstack skill files are read from the installed plugin.
+**Re-reads.** The plan tells the program to re-read its rules at every tick. Files in the repo are read from trunk with `git show origin/main:<path>`; rigor's skill files are read from where they're installed (`~/.claude/skills/` or `~/.agents/skills/`).
 
 ## Skeleton
 
@@ -44,10 +44,10 @@ Tests alone are not sufficient verification. A PR is verified only when its unit
 - [ ] State the protocol and this plan to the user, then stop. Start execution only on the user's explicit go.
 - [ ] On the user's go, arm the objective with this exact text, as `/goal` in Codex or in the `/loop` tick prompt in Claude Code. "<The plan path, the PR ids in order, the verification rule, who merges, and the done condition.>"
 - [ ] Read these at program start and again at every tick.
-  - [ ] The rigor skill's `playbooks/<execution playbook>.md` from the installed plugin
-  - [ ] The `swarm` skill from the installed plugin
-  - [ ] `<control skill>` from the installed plugin
-  - [ ] The rigor skill's `playbooks/opening-a-pr.md` from the installed plugin
+  - [ ] The rigor skill's `playbooks/<execution playbook>.md` from the installed skills
+  - [ ] The `swarm` skill from the installed skills
+  - [ ] `<control skill>` from the installed skills
+  - [ ] The rigor skill's `playbooks/opening-a-pr.md` from the installed skills
   - [ ] `git show origin/main:<each repo file the program depends on, such as CLAUDE.md or AGENTS.md>`
 - [ ] Arm the 30-minute audit tick. In Claude Code, `/loop 30m` with the tick prompt. In Codex, a blocking heartbeat under the armed `/goal`. Never leave the cadence to memory.
 - [ ] Use this tick prompt, verbatim. "Re-read the execution playbook and the armed objective. Audit the operation against both and fix drift in this tick. Probe every active lane and judge progress by side effects only. Stand down a stuck lane and dispatch its replacement now. Then post a short status message to the user only when the audit found a tracked change that no earlier status message reported, such as a PR opened, a code-ready head, a round launched or closed, a verdict, a merge, a stuck agent and the action taken, a blocker added or cleared, or a decision only the user can make. Name every such change and nothing else. Do not repeat a table, the merged list, or an unchanged blocker. If the audit found none, end the turn with no reply text. Either way, log this tick's row in your decision trail. The row names the items reported, or none."

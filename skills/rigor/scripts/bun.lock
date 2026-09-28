@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "@mstack/rigor-tools",
+      "name": "rigor-tools",
       "dependencies": {
         "commander": "14.0.0",
       },

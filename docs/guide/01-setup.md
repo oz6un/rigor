@@ -1,6 +1,6 @@
-# Set up mstack
+# Set up rigor
 
-Installation for Claude Code and Codex is covered in the [project README](../../README.md). Come back here once the plugin is installed.
+Installation for Claude Code and Codex is covered in the [project README](../../README.md). Come back here once rigor is installed.
 
 ## Optional: a verification skill for your app
 

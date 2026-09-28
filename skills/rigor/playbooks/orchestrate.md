@@ -23,7 +23,7 @@ Keep the depth at coordinator, track, worker. Choose tracks per project; build, 
 
 ## Store
 
-Create the store outside the repo, for example `~/.mstack/orchestrate/<project-slug>/`, and export `ORCH_STORE` to it. Every file has one writer. Do bookkeeping with `bun <rigor skill dir>/scripts/orch/orch.ts` from the rigor skill's directory (written `orch` below); its TSV and JSON stay readable without it.
+Create the store outside the repo, for example `~/.rigor/orchestrate/<project-slug>/`, and export `ORCH_STORE` to it. Every file has one writer. Do bookkeeping with `bun <rigor skill dir>/scripts/orch/orch.ts` from the rigor skill's directory (written `orch` below); its TSV and JSON stay readable without it.
 
 | File | Contents |
 |---|---|

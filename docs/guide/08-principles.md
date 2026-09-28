@@ -1,6 +1,6 @@
 # Steer with principle names
 
-mstack ships 23 principles in the [`principles`](../../skills/principles/) skill. `/rigor` reads the index at the start of each multi-step task, applies the ones that fit, and names each applied principle in its reply along with the decision it changed.
+rigor ships 23 principles in the [`principles`](../../skills/principles/) skill. `/rigor` reads the index at the start of each multi-step task, applies the ones that fit, and names each applied principle in its reply along with the decision it changed.
 
 You don't invoke principles; you use their names to redirect work. Each name points to a full rule the agent has already read, so one phrase is more precise than a paragraph of instructions.
 

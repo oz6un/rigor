@@ -1,5 +1,5 @@
 {
-  "name": "@mstack/rigor-tools",
+  "name": "rigor-tools",
   "private": true,
   "type": "module",
   "scripts": {

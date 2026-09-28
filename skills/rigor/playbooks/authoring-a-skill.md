@@ -13,7 +13,7 @@ You own the skill's wording. Claude Code and Codex read the same `SKILL.md` form
      assets/           # optional: templates or files copied into output
    ```
 
-   Where it lives: in a plugin, `skills/<name>/`. For a single project, Claude Code reads `.claude/skills/<name>/` and Codex reads `.agents/skills/<name>/`. For one user, `~/.claude/skills/` and `~/.codex/skills/`.
+   Where it lives: in a skill collection like this one, `skills/<name>/`. For a single project, Claude Code reads `.claude/skills/<name>/` and Codex reads `.agents/skills/<name>/`. For one user, `~/.claude/skills/` and `~/.codex/skills/`.
 3. **Write the frontmatter.** Only these fields:
 
    ```yaml

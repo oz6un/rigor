@@ -9,7 +9,7 @@
 #   --cd DIR    run it in DIR (default: the current directory)
 #   --cli NAME  use codex or claude instead of detecting the host
 #
-# MSTACK_CODEX_MODEL and MSTACK_CLAUDE_MODEL override the model it uses.
+# RIGOR_CODEX_MODEL and RIGOR_CLAUDE_MODEL override the model it uses.
 #
 # Exit codes:
 #   0      the answer is on stdout
@@ -60,7 +60,7 @@ case "$cli" in
     sandbox=read-only
     [[ $write -eq 1 ]] && sandbox=workspace-write
     args=(exec -s "$sandbox" -C "$dir" --skip-git-repo-check --ephemeral -o "$out")
-    [[ -n "${MSTACK_CODEX_MODEL:-}" ]] && args+=(-m "$MSTACK_CODEX_MODEL")
+    [[ -n "${RIGOR_CODEX_MODEL:-}" ]] && args+=(-m "$RIGOR_CODEX_MODEL")
     if ! printf '%s' "$prompt" | codex "${args[@]}" - >"$log" 2>&1; then
       cat "$log" >&2
       exit 1
@@ -73,7 +73,7 @@ case "$cli" in
     mode=plan
     [[ $write -eq 1 ]] && mode=acceptEdits
     args=(-p --permission-mode "$mode" --no-session-persistence)
-    [[ -n "${MSTACK_CLAUDE_MODEL:-}" ]] && args+=(--model "$MSTACK_CLAUDE_MODEL")
+    [[ -n "${RIGOR_CLAUDE_MODEL:-}" ]] && args+=(--model "$RIGOR_CLAUDE_MODEL")
     (cd "$dir" && printf '%s' "$prompt" | claude "${args[@]}")
     ;;
   *)

@@ -1,33 +1,33 @@
-# mstack
+# rigor
 
 Skills for doing careful engineering work with coding agents in Claude Code and Codex. The goal is less code of higher quality: reproduce before fixing, settle the design before writing it, verify on the real artifact, and review with more than one model.
 
-mstack is a port of [pstack](https://github.com/cursor/plugins/tree/main/pstack) by Lauren Tan, originally built for Cursor. The workflows and principles come from pstack. The port removes the Cursor-specific machinery, adapts subagents and model routing to Claude Code and Codex, and rewrites the prose in a plainer voice.
+rigor is a port of [pstack](https://github.com/cursor/plugins/tree/main/pstack) by Lauren Tan, originally built for Cursor. The workflows and principles come from pstack. The port removes the Cursor-specific machinery, adapts subagents and model routing to Claude Code and Codex, and rewrites the prose in a plainer voice.
 
 ## Install
 
-### Claude Code
-
-```
-/plugin marketplace add oz6un/mstack
-/plugin install mstack@mstack
-```
-
-### Codex
+One clone serves both Claude Code and Codex:
 
 ```bash
-codex plugin marketplace add oz6un/mstack
-codex plugin add mstack@mstack
-./codex/install-agents.sh          # installs rigor-agent and comment-reviewer into ~/.codex/agents
+git clone git@github.com:oz6un/rigor.git ~/.local/share/rigor
+~/.local/share/rigor/install.sh
 ```
 
-Codex plugins don't ship custom agents, so the last step copies them into `~/.codex/agents/`. Use `--project <dir>` to install them into a single project's `.codex/agents/` instead. Run it from a clone of this repo.
+`install.sh` symlinks every skill into `~/.claude/skills/` (Claude Code) and `~/.agents/skills/` (Codex), symlinks the subagents into `~/.claude/agents/`, and copies the Codex agents into `~/.codex/agents/`. It never overwrites a skill or agent it didn't create; it skips it and says so. Start a new session afterwards.
+
+To update, pull and rerun the script (the rerun only matters when the Codex agents changed):
+
+```bash
+git -C ~/.local/share/rigor pull && ~/.local/share/rigor/install.sh
+```
+
+To remove everything it installed, run `install.sh --uninstall`. If you move the clone, rerun `install.sh` from the new location to repair the links.
 
 ### Cross-model review (optional)
 
 Skills that run review panels (`interrogate`, `arena`, `architect`, `reflect`, and others) get a second opinion from the other CLI: Claude Code calls `codex exec`, and Codex calls `claude -p`. Install and log in to both CLIs to get this. If the other CLI is missing, the panels run with the host's own subagents and say so in the report.
 
-To pick the model used for second opinions, set `MSTACK_CODEX_MODEL` or `MSTACK_CLAUDE_MODEL`.
+To pick the model used for second opinions, set `RIGOR_CODEX_MODEL` or `RIGOR_CLAUDE_MODEL`.
 
 ## Usage
 
@@ -119,19 +119,18 @@ See [docs/guide](docs/guide/README.md) for a longer walkthrough.
 ## Repository layout
 
 ```
-.claude-plugin/        Claude Code plugin manifest and marketplace
-.agents/plugins/       Codex marketplace
-plugin.json            Portable plugin manifest (Codex)
+install.sh             Installs skills and agents for both hosts
 skills/                Skills, shared by both hosts
 agents/                Claude Code subagents
-codex/agents/          Codex custom agents, plus install-agents.sh
+codex/agents/          Codex custom agents (same content as agents/)
+scripts/check.py       Repo consistency checks
 docs/guide/            Walkthrough
 ```
 
 ## Development
 
-- `python3 scripts/check.py` checks skill frontmatter, links between skills, playbooks and principles, that the two principle indexes, the Claude Code and Codex agent files, the README skills table, and the manifest versions all agree.
-- `scripts/reinstall.sh` runs the check, bumps the patch version, and refreshes the installed plugin in each host whose `mstack` marketplace was added from this clone (`claude plugin marketplace add <path>`, `codex plugin marketplace add <path>`). Both hosts cache the plugin by version, so edits don't show up until the version changes. Hosts installed from GitHub pick up changes after you push and update the marketplace.
+- `python3 scripts/check.py` checks skill frontmatter, links between skills, playbooks and principles, that the two principle indexes, the Claude Code and Codex agent files, and the README skills table all agree.
+- Because the installed skills are symlinks into your clone, edits show up in the next session with no reinstall step. Rerun `install.sh` after adding or removing a skill or agent.
 
 ## License
 

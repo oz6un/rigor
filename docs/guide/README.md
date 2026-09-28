@@ -1,8 +1,8 @@
-# The mstack guide
+# The rigor guide
 
-mstack works best when you describe the goal and how you'll know it's done, and let `/rigor` handle the process. It picks a playbook, calls the other skills as the steps need them, and shows you the evidence. This guide teaches that habit with example prompts. In Codex, type `$rigor` (and `$<skill>` generally) wherever the guide says `/rigor`.
+rigor works best when you describe the goal and how you'll know it's done, and let `/rigor` handle the process. It picks a playbook, calls the other skills as the steps need them, and shows you the evidence. This guide teaches that habit with example prompts. In Codex, type `$rigor` (and `$<skill>` generally) wherever the guide says `/rigor`.
 
-1. [Set up mstack](./01-setup.md)
+1. [Set up rigor](./01-setup.md)
 2. [Route work through `/rigor`](./02-rigor.md)
 3. [Understand the code](./03-understand.md): `/how`, `/why`, `/teach`, `/recall`
 4. [Design the change](./04-design.md): `/architect`, `/arena`, `/swarm`, `/interrogate`

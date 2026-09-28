@@ -15,7 +15,7 @@ Use the files or diff the caller names. Otherwise use the current diff against t
 
 1. **Spawn the reviewer.** Pass it the scope and nothing else; its rules live in its own definition, so don't restate them.
    - In Claude Code, use the Agent tool with `subagent_type: "comment-reviewer"`.
-   - In Codex, spawn the `comment-reviewer` custom agent (installed from this plugin's `codex/agents/`). If it isn't installed, spawn a read-only subagent and tell it to follow this plugin's `agents/comment-reviewer.md`.
+   - In Codex, spawn the `comment-reviewer` custom agent (installed by rigor's `install.sh`). If it isn't installed, spawn a read-only subagent and tell it to follow this plugin's `agents/comment-reviewer.md`.
 
 2. **Check the report.** Reject findings that fall outside the scope, propose application code, delete a comment that matches one of the reviewer's keep exceptions, misstate a `needs-refactor` reason, or treat deliberately kept code as a defect. Then check what it missed and what it kept:
    - A `needs-refactor` flag on a surprise in our own code stays actionable, and the comment stays deleted.

@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""Consistency checks for mstack. Run from anywhere: python3 scripts/check.py"""
-import json
+"""Consistency checks for rigor. Run from anywhere: python3 scripts/check.py"""
 import re
 import sys
 from pathlib import Path
@@ -10,7 +9,7 @@ skills = root / "skills"
 skill_names = {p.name for p in skills.iterdir() if (p / "SKILL.md").exists()}
 principles = {p.stem for p in (skills / "principles").glob("*.md")} - {"SKILL"}
 playbooks = {p.name for p in (skills / "rigor" / "playbooks").glob("*.md")}
-leftover = re.compile(r"\b(cursor|poteto|pstack|grok|sicko)\b", re.I)
+leftover = re.compile(r"\b(cursor|poteto|pstack|grok|sicko|mstack)\b", re.I)
 problems = []
 
 
@@ -98,10 +97,6 @@ for toml in sorted((root / "codex" / "agents").glob("*.toml")):
 readme_skills = set(re.findall(r"^\| `([a-z0-9-]+)` \|", (root / "README.md").read_text(), re.M))
 if readme_skills != skill_names:
     problems.append(f"README skills table: missing {sorted(skill_names - readme_skills)}, extra {sorted(readme_skills - skill_names)}")
-
-versions = {p: json.loads((root / p).read_text()).get("version") for p in (".claude-plugin/plugin.json", "plugin.json")}
-if len(set(versions.values())) != 1:
-    problems.append(f"manifest versions differ: {versions}")
 
 print("\n".join(problems) or f"ok: {len(skill_names)} skills, {len(principles)} principles, {len(playbooks)} playbooks")
 sys.exit(1 if problems else 0)
