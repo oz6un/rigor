@@ -2,18 +2,13 @@
 name: rigor
 description: Work on a task with engineering rigor. Matches the task to a playbook (bug fix, feature, refactor, perf, investigation, shipping, long autonomous runs, and more), routes to the supporting skills, and verifies the result before reporting. Invoked by the user as /rigor (Codex: $rigor); stays on for the rest of the session.
 disable-model-invocation: true
-hooks:
-  UserPromptSubmit:
-    - hooks:
-        - type: command
-          command: python3 "$HOME/.claude/skills/rigor/scripts/mode-hook.py" --active || true
 ---
 
 # Rigor
 
 Use this skill for any task where correctness matters more than speed: a bug that needs a real root cause, a feature that has to work end to end, a refactor that must not change behavior, a PR stack that has to land cleanly.
 
-Once invoked, rigor stays on for the rest of the session: a hook (`scripts/mode-hook.py`) adds a one-line reminder to every later turn. Apply it to each new task that matches a playbook or needs care, and stay out of the way on casual turns. Stop when the user says so.
+Once invoked, rigor stays on for the rest of the session: a hook (`scripts/mode-hook.py`) adds a one-line reminder to every later turn, and after compaction or a resume it tells you to re-read this file. Apply it to each new task that matches a playbook or needs care, and stay out of the way on casual turns. The user turns it off by saying "rigor off".
 
 ## How to start a task
 
