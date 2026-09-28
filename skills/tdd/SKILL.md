@@ -1,9 +1,12 @@
 ---
 name: tdd
 description: Fix a bug test-first, with a focused regression test that fails before the fix and passes after. Use when the user asks for TDD, a failing test, or a regression test, or when the bug has an obvious, cheap local test target. Skip it when the test path is unclear, expensive, or integration-heavy and nobody asked for it.
+disable-model-invocation: true
 ---
 
 # TDD bug fix
+
+Other skills named here don't appear in the model's skill list. To use one, read `<this skill's dir>/../<name>/SKILL.md` and follow it.
 
 When a bug has a clear, cheap test path, make the broken behavior executable before changing production code. The goal is one focused regression test that fails before the fix and passes after it.
 

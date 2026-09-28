@@ -1,9 +1,12 @@
 ---
 name: show-me-your-work
 description: Keep a reviewable decision log for long-running or unattended work, as a TSV with one row per decision (what, why, evidence, result), then audit it and get a review from another model before handing back. Use for /show-me-your-work, autonomous or multi-phase runs, or work the user will review after stepping away.
+disable-model-invocation: true
 ---
 
 # Show me your work
+
+Other skills named here don't appear in the model's skill list. To use one, read `<this skill's dir>/../<name>/SKILL.md` and follow it.
 
 Keep one decision log per effort.
 

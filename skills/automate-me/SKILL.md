@@ -1,10 +1,12 @@
 ---
 name: automate-me
-description: Turn the user's working conventions into a personal <name>-mode skill that routes work through rigor, mined from their Claude Code and Codex transcripts plus a few direct questions. Use for "automate me", "create/update my -mode skill", or "capture how I work in a skill". Invoke only when the user asks.
+description: Turn the user's working conventions into a personal <name>-mode skill that routes work through rigor, mined from their Claude Code and Codex transcripts plus a few direct questions. Use for "automate me", "create/update my -mode skill", or "capture how I work in a skill".
 disable-model-invocation: true
 ---
 
 # Automate me
+
+Other skills named here don't appear in the model's skill list. To use one, read `<this skill's dir>/../<name>/SKILL.md` and follow it.
 
 Produce one `<handle>-mode` skill (for example `jay-mode`) that tells agents how this user works. The mode skill layers the user's preferences on top of `rigor`: it invokes rigor for playbooks, principles, and verification, and adds only what differs for this user.
 

@@ -1,9 +1,12 @@
 ---
 name: architect
 description: Sketch the caller's usage, types, signatures, and module structure before writing implementation, using several independent design candidates, then implement against the chosen sketch. Use for /architect, "design this", or nontrivial work where jumping straight to code would lock in the wrong shape.
+disable-model-invocation: true
 ---
 
 # Architect
+
+Other skills named here don't appear in the model's skill list. To use one, read `<this skill's dir>/../<name>/SKILL.md` and follow it.
 
 Design before implementing. Sketch types, function signatures, class shapes, and module boundaries with `not implemented` bodies and pseudocode. Compare several independent candidates, combine them into one sketch, then fill in code against it. If implementation shows the sketch is wrong, discard it and redesign.
 

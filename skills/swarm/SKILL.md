@@ -1,9 +1,12 @@
 ---
 name: swarm
 description: Fan out N parallel workers (host subagents plus at least one from the other coding CLI) over separate slices or identical briefs, wait for all of them, and return one consolidated report. Use for /swarm, "swarm this", or parallel coverage checks, audits, races, and exploration.
+disable-model-invocation: true
 ---
 
 # Swarm
+
+Other skills named here don't appear in the model's skill list. To use one, read `<this skill's dir>/../<name>/SKILL.md` and follow it.
 
 Run N parallel workers. They can each cover a separate slice, race on the same brief, or a mix of both. You wait for all of them, aggregate, and return one report.
 

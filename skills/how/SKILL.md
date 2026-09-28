@@ -1,6 +1,7 @@
 ---
 name: how
 description: Explains how a part of the codebase works (architecture, runtime flow, where things live) at the level a senior engineer needs to start working in it. Use for "how does X work", a walkthrough before changing something, or placement questions like "where should this live" and "which package owns this". For why the code is shaped the way it is, use `why`.
+disable-model-invocation: true
 ---
 
 # How

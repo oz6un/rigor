@@ -13,7 +13,9 @@ git clone git@github.com:oz6un/rigor.git ~/.local/share/rigor
 ~/.local/share/rigor/install.sh
 ```
 
-`install.sh` symlinks every skill into `~/.claude/skills/` (Claude Code) and `~/.agents/skills/` (Codex), symlinks the subagents into `~/.claude/agents/`, and copies the Codex agents into `~/.codex/agents/`. It never overwrites a skill or agent it didn't create; it skips it and says so. Start a new session afterwards.
+`install.sh` symlinks every skill into `~/.claude/skills/` (Claude Code) and `~/.agents/skills/` (Codex), symlinks the subagents into `~/.claude/agents/`, and copies the Codex agents into `~/.codex/agents/`. It also adds rigor's stay-on hook to `~/.codex/hooks.json`. It never overwrites a skill or agent it didn't create; it skips it and says so.
+
+Codex runs a hook only after you approve it once: open Codex, run `/hooks`, and trust the rigor hook. Claude Code needs no extra step. Start a new session afterwards.
 
 To update, pull and rerun the script (the rerun only matters when the Codex agents changed):
 
@@ -41,7 +43,11 @@ Start a task with `/rigor` (Codex: `$rigor`):
 /rigor I'm going to bed. Land the stack even if CI flakes; I want everything merged by morning.
 ```
 
-`rigor` matches the task to a playbook, copies the playbook's steps into a todo list, and calls the other skills when a step needs them. It stays on for the rest of the session, and you can turn it off by saying so.
+`rigor` matches the task to a playbook, copies the playbook's steps into a todo list, and calls the other skills when a step needs them. It stays on for the rest of the session: a hook adds a one-line reminder to every later turn, so a new task in the same session gets the same treatment. Say so to turn it off.
+
+Like pstack, rigor runs only when you type it, and every other skill except `recall` is hidden from the model's skill list, so none of them fire on their own in unrelated work. `rigor` reads them when a step needs them, and you can still type any of them directly (`/how`, `$why`).
+
+In Claude Code, resuming a session (`claude --resume`) drops the reminder hook; type `/rigor` again after resuming.
 
 The other skills can also be used on their own:
 

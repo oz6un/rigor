@@ -14,6 +14,10 @@ claude_skills="$HOME/.claude/skills"
 codex_skills="$HOME/.agents/skills"
 claude_agents="$HOME/.claude/agents"
 codex_agents="${CODEX_HOME:-$HOME/.codex}/agents"
+# Codex has no skill-scoped hooks, so rigor's stay-on reminder is a global hook that only speaks in
+# sessions where $rigor was used. Claude Code gets the same hook from rigor's frontmatter.
+codex_hooks="${CODEX_HOME:-$HOME/.codex}/hooks.json"
+mode_hook="$root/skills/rigor/scripts/mode-hook.py"
 mode="${1:-install}"
 
 ours() { [[ -L "$1" && "$(readlink "$1")" == "$root/"* ]]; }
@@ -39,6 +43,7 @@ uninstall() {
     dest="$codex_agents/$(basename "$toml")"
     [[ -f "$dest" ]] && cmp -s "$toml" "$dest" && rm "$dest" && echo "removed $dest"
   done
+  python3 "$root/scripts/codex-hook.py" remove "$codex_hooks" "$mode_hook" && echo "removed rigor's hook from $codex_hooks"
   return 0
 }
 
@@ -67,6 +72,8 @@ for agent in "$root"/agents/*.md; do
   link "$agent" "$claude_agents/$(basename "$agent")"
 done
 cp "$root"/codex/agents/*.toml "$codex_agents/"
+python3 "$root/scripts/codex-hook.py" add "$codex_hooks" "$mode_hook"
 
 echo "Installed $count skills and $(ls "$root"/agents/*.md | wc -l | tr -d ' ') agents for Claude Code and Codex."
-echo "Start a new session and use /rigor (Claude Code) or \$rigor (Codex)."
+echo "Codex only: open Codex, run /hooks, and trust the rigor hook once."
+echo "Then start a new session and type /rigor (Claude Code) or \$rigor (Codex). It stays on for the rest of that session."

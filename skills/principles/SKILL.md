@@ -1,6 +1,7 @@
 ---
 name: principles
 description: Engineering principles for design, verification, and delegation decisions. Read the index, then the file for each principle you apply.
+disable-model-invocation: true
 ---
 
 # Principles

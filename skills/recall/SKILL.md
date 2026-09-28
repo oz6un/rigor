@@ -1,10 +1,11 @@
 ---
 name: recall
-description: Rebuilds your recent working context from your own chat history, live git and PR state, and the team's shared record (user reports, earlier fixes, incidents), then returns a short brief of where things stand and what to do next. Use for "recall my work on X", "catch me up", "where did I leave off", or before starting or resuming work. Invoke only when the user asks.
-disable-model-invocation: true
+description: Rebuilds your recent working context from your own chat history, live git and PR state, and the team's shared record (user reports, earlier fixes, incidents), then returns a short brief of where things stand and what to do next. Use for "recall my work on X", "catch me up", "where did I leave off", or before starting or resuming work.
 ---
 
 # Recall
+
+Other skills named here don't appear in the model's skill list. To use one, read `<this skill's dir>/../<name>/SKILL.md` and follow it.
 
 Before starting or resuming work, rebuild the user's recent context and return a short brief: where things stand and what to do next. Read only what the in-scope threads need, then stop.
 

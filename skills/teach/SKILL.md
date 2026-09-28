@@ -1,10 +1,12 @@
 ---
 name: teach
-description: Explains a body of work (a subsystem, a change, a concept in the codebase) so a person actually understands it, combining what the `how` and `why` skills find into one plain account at the person's pace. Use for "teach me this", "help me really understand X", or "explain this change to me". Invoke only when the user asks.
+description: Explains a body of work (a subsystem, a change, a concept in the codebase) so a person actually understands it, combining what the `how` and `why` skills find into one plain account at the person's pace. Use for "teach me this", "help me really understand X", or "explain this change to me".
 disable-model-invocation: true
 ---
 
 # Teach
+
+Other skills named here don't appear in the model's skill list. To use one, read `<this skill's dir>/../<name>/SKILL.md` and follow it.
 
 Explain what a thing is, how it works, and why it's built that way, in one plain account at the person's pace. The goal is their understanding; you don't change anything.
 

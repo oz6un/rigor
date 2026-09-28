@@ -1,9 +1,12 @@
 ---
 name: create-verification-skill
 description: Generate a project-local verification skill that launches the app and drives it the way a user does, in any language or platform. Use for /create-verification-skill, "make a verify skill for this repo", or when a project has no scripted way to prove UI, CLI, or service behavior.
+disable-model-invocation: true
 ---
 
 # Create a verification skill
+
+Other skills named here don't appear in the model's skill list. To use one, read `<this skill's dir>/../<name>/SKILL.md` and follow it.
 
 A project needs a scripted way to drive the real app and prove behavior: launch it, exercise a feature as a user would, and capture evidence. This skill generates that as a project-local skill tailored to the repo. The reader is the next agent, arriving cold and mid-task, who has never seen the app. Write for that reader.
 

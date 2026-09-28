@@ -33,6 +33,23 @@ for name in sorted(skill_names):
     if not 0 < len(fm.get("description", "")) <= 1024:
         problems.append(f"skills/{name}/SKILL.md: description missing or over 1024 chars")
 
+hidden = set()
+for name in sorted(skill_names):
+    text = (skills / name / "SKILL.md").read_text()
+    claude_hidden = frontmatter(text).get("disable-model-invocation") == "true"
+    policy = skills / name / "agents" / "openai.yaml"
+    codex_hidden = policy.exists() and "allow_implicit_invocation: false" in policy.read_text()
+    if claude_hidden != codex_hidden:
+        problems.append(f"skills/{name}: hidden in {'Claude Code' if claude_hidden else 'Codex'} only; "
+                        "set disable-model-invocation and agents/openai.yaml together")
+    if claude_hidden:
+        hidden.add(name)
+for name in sorted(skill_names - {"rigor"}):
+    body = (skills / name / "SKILL.md").read_text().split("---\n", 2)[2]
+    named = {m for m in re.findall(r"`/?([a-z0-9-]+)`", body) if m in hidden and m != name}
+    if named and "<this skill's dir>/../<name>/SKILL.md" not in body:
+        problems.append(f"skills/{name}/SKILL.md: names hidden skills {sorted(named)} without saying how to read them")
+
 docs = [p for p in root.rglob("*.md") if "node_modules" not in p.parts and ".git" not in p.parts]
 for path in docs:
     rel = path.relative_to(root)

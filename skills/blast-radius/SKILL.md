@@ -1,10 +1,12 @@
 ---
 name: blast-radius
-description: Finds what a change could break outside its own diff before it ships, and proves the one fact its safety depends on by running real code. Use for "what's the blast radius of X", "what could this break", or reviewing a small diff you don't trust yet. Invoke only when the user asks.
+description: Finds what a change could break outside its own diff before it ships, and proves the one fact its safety depends on by running real code. Use for "what's the blast radius of X", "what could this break", or reviewing a small diff you don't trust yet.
 disable-model-invocation: true
 ---
 
 # Blast radius
+
+Other skills named here don't appear in the model's skill list. To use one, read `<this skill's dir>/../<name>/SKILL.md` and follow it.
 
 Find what a change breaks elsewhere, before it ships. `how` explains what code does and `why` explains why it's shaped that way; blast radius finds what a change to it breaks somewhere else.
 

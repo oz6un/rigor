@@ -1,9 +1,12 @@
 ---
 name: technical-writing
 description: A layered standard for technical writing, built on Diátaxis, the Google developer style guide, Simplified Technical English, and Global English. Use when writing or reviewing docs, RFCs, READMEs, PR descriptions, or commit messages.
+disable-model-invocation: true
 ---
 
 # Technical writing
+
+Other skills named here don't appear in the model's skill list. To use one, read `<this skill's dir>/../<name>/SKILL.md` and follow it.
 
 The goal is writing that a tired engineer understands on the first read. Four layers get there, each answering one question:
 

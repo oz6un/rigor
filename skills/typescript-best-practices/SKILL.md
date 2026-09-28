@@ -1,9 +1,12 @@
 ---
 name: typescript-best-practices
 description: Rules for writing TypeScript that the compiler can check. Use when reading or editing any .ts or .tsx file.
+disable-model-invocation: true
 ---
 
 # TypeScript best practices
+
+Other skills named here don't appear in the model's skill list. To use one, read `<this skill's dir>/../<name>/SKILL.md` and follow it.
 
 Read the `type-system-discipline` principle (in the `principles` skill) first. Examples for each rule are in `references/patterns.md`.
 

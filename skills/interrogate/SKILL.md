@@ -1,6 +1,7 @@
 ---
 name: interrogate
 description: Adversarial multi-model code review. Independent reviewers (host subagents plus one from the other coding CLI) challenge a diff against a shared rubric and code-quality lens, and you deliver a filtered verdict. Use for "interrogate", "adversarial review", "multi-model review", "challenge this", "stress test this code", or "find blind spots".
+disable-model-invocation: true
 ---
 
 # Interrogate

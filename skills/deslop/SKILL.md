@@ -1,9 +1,12 @@
 ---
 name: deslop
 description: Remove AI-generated clutter from the current branch's code changes before committing. Use before a commit or when asked to clean up a diff.
+disable-model-invocation: true
 ---
 
 # Deslop
+
+Other skills named here don't appear in the model's skill list. To use one, read `<this skill's dir>/../<name>/SKILL.md` and follow it.
 
 Review the diff against the base branch (default `main`) and remove clutter that this branch introduced. Existing code outside the diff is out of scope.
 

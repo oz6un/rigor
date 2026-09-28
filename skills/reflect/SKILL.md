@@ -1,6 +1,6 @@
 ---
 name: reflect
-description: Review the current session's transcript with three independent reviewers (one on the other coding CLI), extract durable learnings, and turn each into a proposed edit to an existing skill for the user to approve. Use when the user says "reflect" or runs /reflect. Invoke only when the user asks.
+description: Review the current session's transcript with three independent reviewers (one on the other coding CLI), extract durable learnings, and turn each into a proposed edit to an existing skill for the user to approve. Use when the user says "reflect" or runs /reflect.
 disable-model-invocation: true
 ---
 

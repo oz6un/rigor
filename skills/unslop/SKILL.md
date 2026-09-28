@@ -1,6 +1,7 @@
 ---
 name: unslop
 description: The writing standard for all prose you produce (replies, docs, PR descriptions, commit messages, comments). Use it while drafting and to edit existing text that reads as AI-generated, padded, or mannered.
+disable-model-invocation: true
 ---
 
 # Unslop

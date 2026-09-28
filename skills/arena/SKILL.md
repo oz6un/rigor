@@ -1,6 +1,7 @@
 ---
 name: arena
 description: Run several independent attempts at the same task in parallel (host subagents plus one from the other coding CLI), pick the strongest as the base, and fold in the best parts of the others. Use for /arena, "arena this", or when a single attempt at a nontrivial design or piece of code would lock in the wrong shape.
+disable-model-invocation: true
 ---
 
 # Arena

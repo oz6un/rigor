@@ -1,9 +1,12 @@
 ---
 name: no-comments
 description: Remove unneeded comments from a diff. Spawns the read-only comment-reviewer subagent, applies the findings you accept, fixes the code the comments were explaining, and offers to encode claimed constraints as checks. Use before requesting review.
+disable-model-invocation: true
 ---
 
 # No comments
+
+Other skills named here don't appear in the model's skill list. To use one, read `<this skill's dir>/../<name>/SKILL.md` and follow it.
 
 The `comment-reviewer` subagent decides which comments go. It sees the code without your context, which is the point, so give its findings weight and don't argue them back to what you wrote. Your job is to check its report, apply it, and fix the code behind the comments.
 

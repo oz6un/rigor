@@ -1,6 +1,7 @@
 ---
 name: control-ui
 description: Drive and inspect a web, desktop, or Electron UI with browser automation or CDP to gather evidence. Use for local UI verification, screenshots, accessibility snapshots, performance profiles, visual diffs, or reproducing UI bugs.
+disable-model-invocation: true
 ---
 
 # Control UI
