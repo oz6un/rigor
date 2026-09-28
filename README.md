@@ -45,6 +45,14 @@ Start a task with `/rigor` (Codex: `$rigor`):
 
 `rigor` matches the task to a playbook, copies the playbook's steps into a todo list, and calls the other skills when a step needs them. It stays on for the rest of the session: a hook adds a one-line reminder to every later turn, so a new task in the same session gets the same treatment. After compaction or a resume, the hook tells the model to re-read the rigor skill, since compaction drops the skill's text (Codex) or can cut it short (Claude Code). Say "rigor off" to turn it off; that's recorded outside the conversation, so compaction can't undo it.
 
+For long work, combine it with `/goal` (both hosts), which keeps the session going until a condition you can check holds:
+
+```
+/goal Use /rigor to migrate billing to the Period type. Done when python3 -m pytest exits 0 and no existing test is modified.
+```
+
+`/loop /rigor ...` does not work: `/loop` passes user-invoked skills through as plain text. `/goal` works because rigor's hook sees `/rigor` in the goal text and turns rigor on.
+
 Like pstack, rigor runs only when you type it, and every other skill except `recall` is hidden from the model's skill list, so none of them fire on their own in unrelated work. `rigor` reads them when a step needs them, and you can still type any of them directly (`/how`, `$why`).
 
 The other skills can also be used on their own:
