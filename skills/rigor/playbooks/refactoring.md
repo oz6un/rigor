@@ -1,0 +1,16 @@
+# Refactoring
+
+You own the contract: the structure changes, the behavior doesn't. Feature adds behavior and Bug fix corrects it; this playbook does neither.
+
+If the cleanup turns up a missing feature or a real bug, split it out and ship the structural change first, held against the pinned behavior. A redesign is fine, but call it one and route it to the Feature playbook. Large or cross-cutting structural work goes to the `figure-it-out` skill; this playbook covers focused to medium-sized changes.
+
+1. Pin the behavior first. Run `how` over the affected subsystem to learn its contract, then write a characterization test, snapshot, or equivalence harness that captures current behavior before any structure moves. If the area has no coverage, write the pin before touching anything. Type checks and lint are not a pin.
+2. Name the structure the code is missing (the `model-the-domain` principle). Leave plain code alone when its shape is already clear and local. The reshape has to remove branches or invalid states, not add indirection.
+3. Name the target shape: the module layout, types, and call graph you'd build today (the `foundational-thinking` and `redesign-from-first-principles` principles). If the target crosses a function boundary, run `architect` to explore the shape before moving code.
+4. Subtract before you add. Delete dead code, collapse single-caller wrappers, drop redundant validation, and remove orphaned references before introducing the new shape (the `subtract-before-you-add` principle). Ship the smallest change that reaches the target (the `laziness-protocol` principle), and revert speculative cleanups that "might help".
+5. Move in small behavior-preserving steps, keeping the pin green after each. When reshaping an API, migrate every caller and delete the old API in the same change (the `migrate-callers-then-delete-legacy-apis` principle), with no compatibility shims or parallel old and new paths. Check every rename against the actual files, since renames easily miss uses in strings, docs, and back-references. Delegate mechanical edits to a `rigor-agent` subagent (a fast model is fine) with a specific scope: file paths, the names being moved, and the behavior to hold.
+6. Prove behavior is unchanged on the real artifact, not just that it compiles (the `prove-it-works` principle). For larger reshapes, run an equivalence check: a script that diffs old and new outputs, a recorded baseline replayed against the new code, or a smoke run on the affected surface with `control-ui` or `control-cli`.
+7. Confirm the change is worth keeping. The measure of success is lower reader load (the `minimize-reader-load` principle). If the diff doesn't make some code easier to follow, revert it.
+8. Rebase into small ordered commits: the subtraction first, then the reshape, then any follow-up cleanup, each staying green before the next (the `sequence-verifiable-units` principle). Then run the Opening a PR playbook (`playbooks/opening-a-pr.md`).
+
+**Reply:** the structure that changed, the pin you held it against, the equivalence proof, the reader-load difference, and what shipped versus what got reverted. Confirm there is no new behavior.

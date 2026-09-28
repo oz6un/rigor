@@ -1,0 +1,12 @@
+{
+  "name": "mstack",
+  "owner": { "name": "oz6un" },
+  "description": "mstack: rigorous engineering workflows for Claude Code and Codex.",
+  "plugins": [
+    {
+      "name": "mstack",
+      "source": ".",
+      "description": "Playbooks, principles, multi-model review, and verification skills."
+    }
+  ]
+}

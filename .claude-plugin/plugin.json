@@ -1,0 +1,10 @@
+{
+  "name": "mstack",
+  "version": "0.1.1",
+  "description": "Rigorous engineering workflows for coding agents: playbooks, principles, multi-model review, and verification. Ported from pstack.",
+  "author": { "name": "oz6un" },
+  "homepage": "https://github.com/oz6un/mstack",
+  "repository": "https://github.com/oz6un/mstack",
+  "license": "MIT",
+  "keywords": ["workflow", "principles", "review", "verification", "subagents"]
+}
