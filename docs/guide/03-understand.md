@@ -1,6 +1,6 @@
 # Understand the code before changing it
 
-An agent that edits code it hasn't traced tends to fix the symptom at the first plausible spot. Four skills help first: `/how` explains what the code does, `/why` finds out why it's shaped that way, `/teach` combines both into an explanation, and `/recall` rebuilds your own recent context.
+An agent that edits code it hasn't traced tends to fix the symptom at the first plausible spot. Three skills help first: `/how` explains what the code does, `/why` finds out why it's shaped that way, and `/recall` rebuilds your own recent context.
 
 ## `/how`: trace behavior
 
@@ -17,14 +17,6 @@ Ask the question you actually have. [`/how`](../../skills/how/SKILL.md) explains
 ```
 
 [`/why`](../../skills/why/SKILL.md) starts from git history, then searches whatever your MCP servers expose (issue tracker, docs, team chat, observability, error tracking) in parallel. It cites sources, separates evidence from inference, and reports "nobody wrote down why" when that's the answer. `do why first, then how` is a good prompt when you suspect the history explains the code.
-
-## `/teach`: understand it properly
-
-```text
-/teach me how this PR changes retries. convince me it fixes the cause and not the symptom.
-```
-
-[`/teach`](../../skills/teach/SKILL.md) runs `/how` and `/why` as needed and builds a plain explanation step by step, with diagrams. Asking it to "convince me" turns the explanation into an argument you can challenge.
 
 ## `/recall`: catch up on your own work
 

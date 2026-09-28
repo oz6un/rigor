@@ -54,12 +54,6 @@ apply prove it works. show me the real output, not the build log.
 /unslop that, no em dashes
 ```
 
-Get the last reply restated in plain words, shorter and without jargon:
-
-```text
-/bro
-```
-
 ## Pitfalls
 
 - **Listing skills in the prompt.** It reorders steps the playbook already sequences. State the goal and constraints; name a skill only to override a default.

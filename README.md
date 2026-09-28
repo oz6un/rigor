@@ -101,7 +101,6 @@ See [docs/guide](docs/guide/README.md) for a longer walkthrough.
 | `how` | You want a walkthrough of how a subsystem works. |
 | `why` | You want to know why something was built this way. Queries git history plus whatever MCP servers you have (issue tracker, docs, chat, error tracking, observability). |
 | `recall` | You're resuming work and want your recent context rebuilt from your own session history. |
-| `teach` | You want to understand a change or subsystem, built up step by step. |
 | `blast-radius` | You want to know what else a small-looking change could break. |
 | `architect` | You're about to write code that crosses a function boundary and want the interface settled first. |
 | `arena` | You want several independent attempts at the same thing, then the best parts combined. |
@@ -115,7 +114,6 @@ See [docs/guide](docs/guide/README.md) for a longer walkthrough.
 | `no-comments` | You want unnecessary comments stripped before review. |
 | `unslop` | You're cleaning up prose. |
 | `technical-writing` | You're writing docs, RFCs, READMEs, PR descriptions, or commit messages. |
-| `bro` | You want the last message restated in plain language. |
 | `typescript-best-practices` | You're reading or writing TypeScript. |
 | `control-ui` | You need to drive a browser or Electron UI to verify a change. |
 | `control-cli` | You need to drive a CLI or TUI to verify a change. |

@@ -4,7 +4,7 @@ rigor works best when you describe the goal and how you'll know it's done, and l
 
 1. [Set up rigor](./01-setup.md)
 2. [Route work through `/rigor`](./02-rigor.md)
-3. [Understand the code](./03-understand.md): `/how`, `/why`, `/teach`, `/recall`
+3. [Understand the code](./03-understand.md): `/how`, `/why`, `/recall`
 4. [Design the change](./04-design.md): `/architect`, `/arena`, `/swarm`, `/interrogate`
 5. [Build and clean the change](./05-build-and-clean.md): the build playbooks, `/tdd`, `/deslop`, `/unslop`, `/no-comments`
 6. [Verify and ship](./06-verify-and-ship.md): prove behavior in the real app, open a focused PR, drive it to merged
