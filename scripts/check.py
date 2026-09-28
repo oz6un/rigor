@@ -67,6 +67,10 @@ for md in sorted((root / "agents").glob("*.md")):
     if not desc or desc.group(1) != frontmatter(md_text).get("description"):
         problems.append(f"codex/agents/{toml.name}: description differs from agents/{md.name}")
 
+readme_skills = set(re.findall(r"^\| `([a-z0-9-]+)` \|", (root / "README.md").read_text(), re.M))
+if readme_skills != skill_names:
+    problems.append(f"README skills table: missing {sorted(skill_names - readme_skills)}, extra {sorted(readme_skills - skill_names)}")
+
 versions = {p: json.loads((root / p).read_text()).get("version") for p in (".claude-plugin/plugin.json", "plugin.json")}
 if len(set(versions.values())) != 1:
     problems.append(f"manifest versions differ: {versions}")

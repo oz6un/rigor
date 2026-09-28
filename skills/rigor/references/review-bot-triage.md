@@ -6,8 +6,8 @@ Use this when the Babysit playbook (`../playbooks/babysit.md`) handles comments 
 
 Classify each thread before acting:
 
-- `fix`: the comment identifies a plausible correctness, security, privacy, data-loss, auth, billing, migration, idempotency, race, or shipped-behavior problem. Fix it in the lowest PR that owns the code, reply with the commit SHA, and resolve the thread.
-- `dismiss`: the comment matches a documented low-risk noise pattern below, and the current code proves no change is needed. Reply with a short, concrete reason and resolve the thread.
+- `fix`: the comment identifies a plausible correctness, security, privacy, data-loss, auth, billing, migration, idempotency, race, or shipped-behavior problem. Fix it with a failing-first test in the lowest PR that owns the code, not at the tip, reply with the commit SHA, and resolve the thread.
+- `dismiss`: the comment matches a documented low-risk noise pattern below, and the current code proves no change is needed. Reply with a short, concrete disproof and resolve the thread. Don't change code just to quiet a bot.
 - `ask`: the comment is novel, high-severity, touches security, privacy, or data, or is ambiguous. Ask the user instead of guessing.
 
 When unsure, ask. Skipping a noisy style comment costs little; skipping a real data or security bug costs a lot.

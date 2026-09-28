@@ -75,14 +75,12 @@ Fix the log by adding rows, never by editing. When a row records something that 
 
 ## Review by another model
 
-Before handing back, have a model other than the one that did the work review the log. Self-review doesn't substitute. Run the review through the `second-opinion.sh` script in the `rigor` skill's `scripts/` directory (`../rigor/scripts/second-opinion.sh` from here), read-only, giving it the log path and the transcript path. The reviewer doesn't redo the work; it scans for what the user should look at:
+Before handing back, have a model other than the one that did the work review the log. Self-review doesn't substitute. Run the review through `../rigor/scripts/second-opinion.sh`, read-only, giving it the log path and the transcript path. The reviewer doesn't redo the work; it scans for what the user should look at:
 
 - Decisions with weak or missing evidence.
 - Verification that was skipped, or claimed without proof in the transcript.
 - Choices that look risky in hindsight: premature, expanding scope, or covering a symptom.
 - Anything the user would miss on a quick skim.
-
-If the script exits 3, use a fresh host subagent instead, and note that it runs on the same model family.
 
 Every reply for a run that kept a log ends with an **Attention** section. Its first line names the reviewer (`reviewed by <CLI and model>`, or `reviewed by host subagent (<model>), other CLI not installed`). Then list each flag with the rows or moments it refers to. "No flags" is a valid result; the reviewer line is always required.
 

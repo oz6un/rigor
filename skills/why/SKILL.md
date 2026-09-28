@@ -87,11 +87,11 @@ Spawn one synthesizer on your strongest model, again with MCP access so it can s
 4. `references/epistemics.md`
 5. The prompt in `references/synthesizer-prompt.md`
 
-For a contested or high-stakes answer, get a cross-model check: send the synthesis, the code anchor, and `references/epistemics.md` to the `second-opinion.sh` script in the `rigor` skill's `scripts/` directory and ask it to find claims whose tier is higher than the cited evidence supports. Move any claim it successfully challenges down a tier. If the script exits with code 3, use a host subagent with that brief instead and say so.
+For a contested or high-stakes answer, get a cross-model check: send the synthesis, the code anchor, and `references/epistemics.md` to `../rigor/scripts/second-opinion.sh` and ask it to find claims whose tier is higher than the cited evidence supports. Move any claim it successfully challenges down a tier.
 
 ## 5. Present
 
-Give the user the synthesizer's output. You may lightly edit for clarity or add context from the conversation, but don't change the confidence language.
+Give the user the synthesizer's output. You may lightly edit for clarity or add context from the conversation, but don't change the confidence language. If the cross-model check fell back to a host subagent, say so.
 
 The output follows `references/synthesizer-prompt.md`: The question, The code in question, What we found, What we can reasonably infer, Competing hypotheses, What we don't know, Sources consulted, Confidence summary. Keep the tiers separate, and keep Sources consulted to one line per category, including the ones that returned nothing or were skipped, with the reason.
 

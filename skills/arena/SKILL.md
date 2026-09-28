@@ -17,7 +17,7 @@ Every candidate gets the same prompt, so the prompt is the contract. Host candid
 2. Write the rubric: what success looks like for this task, as 3-6 concrete criteria you can score. The rubric is for you and the judge in Phases C and D. Candidates only see the task.
 3. Choose the panel. The default is three candidates:
    - Two or more host subagents on your strongest model. Give each the identical prompt when the work is generation-bound. When the arena should explore several design directions, add one candidate per direction and name the direction in its prompt.
-   - One candidate from the other CLI, run through the `second-opinion.sh` script in the `rigor` skill's `scripts/` directory (`../rigor/scripts/second-opinion.sh` from this skill's directory). A different model family is the main source of real diversity, so keep this seat whenever the other CLI is installed. If the script exits 3, replace the seat with another host subagent and note the fallback in the synthesis record.
+   - One candidate from the other CLI, run through `../rigor/scripts/second-opinion.sh`. A different model family is the main source of real diversity, so keep this seat whenever the other CLI is installed.
 4. Give each candidate its own output location so no two attempts share state (the `separate-before-serializing-shared-state` principle). See [Isolating candidates](#isolating-candidates).
 
 ## Phase B: Fan out
@@ -35,6 +35,8 @@ Launch all candidates at once and let them run in parallel. Each prompt includes
 
 If a candidate produces nothing usable, continue with N-1 and record the dropout.
 
+Arena candidates leave their changes uncommitted, because the other CLI's sandbox may not be able to write the repo's `.git`.
+
 ### Isolating candidates
 
 When candidates write code, each needs its own git worktree:
@@ -46,15 +48,17 @@ When candidates write code, each needs its own git worktree:
   git worktree add -b "arena/<slug>/<n>" "../arena-<slug>-<n>" HEAD
   ```
 
-  Pass that path in the subagent's prompt, or as `--cd` to `second-opinion.sh --write`. Tell candidates to leave changes uncommitted (the other CLI's sandbox may not be able to write the repo's `.git`). Read a candidate's full change with `git -C <worktree> add -A && git -C <worktree> diff --cached`.
+  Use a specific branch or commit instead of `HEAD` when the attempt must start from one.
+
+  Pass that path in the subagent's prompt, or as `--cd` to `second-opinion.sh --write`. Read a candidate's full change with `git -C <worktree> add -A && git -C <worktree> diff --cached`.
 
 For text artifacts, use `/tmp/arena-<slug>/candidate-<n>/`. When the arena is done, remove the worktrees you created (`git worktree remove <path>`) and delete their branches unless a candidate's branch became the base.
 
 ## Phase C: Cross-judge
 
-After every candidate has finished, get one independent judge from a different model family than yours: run it through `second-opinion.sh` (read-only, the default). Give it the rubric and the candidates by path label. It scores each criterion per candidate and recommends a base with reasons. It runs while you do your own reading in Phase D. Don't start it while candidates are still writing.
+After every candidate has finished, get one independent judge from a different model family than yours: run it through `../rigor/scripts/second-opinion.sh` (read-only, the default). Give it the rubric and the candidates by path label. It scores each criterion per candidate and recommends a base with reasons. It runs while you do your own reading in Phase D. Don't start it while candidates are still writing.
 
-If the script exits 3, use a read-only host subagent as the judge (Claude Code `Explore`; Codex `sandbox_mode = "read-only"`) and note that the judge shares your model family.
+If the other CLI isn't installed, the judge is a read-only host subagent (Claude Code `Explore`; Codex `sandbox_mode = "read-only"`); note that it shares your model family.
 
 ## Phase D: Pick a base
 

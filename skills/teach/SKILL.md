@@ -26,15 +26,8 @@ Teach builds on `how` and `why`. Orient yourself on what the work is and what it
 
 ## How to write it
 
-Write through `unslop`, in plain spoken English, as you'd explain it to a colleague. Be tight without being terse: cut filler and hedging, and keep the part that makes it click. State the concrete mechanism rather than a metaphor, a framing, or a preview of what's coming. Target density:
+Write through `unslop`, which owns sentence-level style, in plain spoken English, as you'd explain it to a colleague. Be tight without being terse, and keep the part that makes it click. Prefer short sentences. State the concrete mechanism rather than a metaphor, a framing label, a mirror sentence (both in the mannered-prose rule), or a preview of what's coming. Don't echo the step names above as headings; they're instructions to you. Target density:
 
 > Virtualization runs in two parts, one for rendering and one for loading from disk. When an item scrolls out past the buffer, both its DOM node and its in-memory data are evicted.
-
-- Use normal sentence case.
-- Prefer short sentences. If clauses pile up, split them.
-- Give each concept one name and keep using it.
-- Don't print framing labels ("the key insight", "at its core", "TL;DR", "the one idea to hold onto") or tidy closers ("and the rest follows").
-- Avoid mirror sentences ("A without B, or B without A").
-- The step names above are instructions to you. Don't echo them as headings.
 
 The reply is the explanation itself, not a report about what you did. Lead with the main point, give the plain account of what it is, how it works, and why, and end with the threads worth following up with `how` or `why`.

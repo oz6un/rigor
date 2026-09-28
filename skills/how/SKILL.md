@@ -23,7 +23,7 @@ Split the question into two to four exploration angles, each a distinct slice of
 - In Claude Code, use the `Explore` agent, or `general-purpose` on a fast model.
 - In Codex, spawn subagents with `sandbox_mode = "read-only"` on a fast model.
 
-For a cross-model check, run one of the angles through the `second-opinion.sh` script in the `rigor` skill's `scripts/` directory (read-only by default) instead of a host subagent. If it exits with code 3, use a host subagent for that angle and note it.
+For a cross-model check, run one of the angles through `../rigor/scripts/second-opinion.sh` instead of a host subagent.
 
 Then go to step 3.
 
@@ -37,6 +37,6 @@ When every explorer has returned, spawn one read-only subagent on your strongest
 
 ## 4. Present
 
-Give the user the explainer's output. Light edits for clarity or to connect it to the conversation are fine; don't rewrite it.
+Give the user the explainer's output. Light edits for clarity or to connect it to the conversation are fine; don't rewrite it. If the cross-model angle fell back to a host subagent, say so.
 
 The explanation uses the sections from `references/explainer-prompt.md`, dropping any that don't apply: Overview, Key concepts, How it works, Where things live, Gotchas.

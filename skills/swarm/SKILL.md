@@ -16,9 +16,9 @@ Start a todo list with one item per phase before launching anything: Frame, Fan 
 3. Set N from the user's request or derive it from the shape. N is the total number of workers.
 4. Assign workers:
    - Most workers are host subagents. Use a fast model for mechanical checks and your strongest model for judgment-heavy slices (Claude Code: the Agent tool's `model`; Codex: `model` on the spawn).
-   - Run at least one worker through the other CLI with the `second-opinion.sh` script in the `rigor` skill's `scripts/` directory (`../rigor/scripts/second-opinion.sh` from here). In a race, make it one arm. In a coverage swarm, give it one slice, or have it independently re-check a slice a host worker also covers, so the report includes a cross-model check. If the script exits 3, use a host subagent for that seat and say so in the report.
+   - Run at least one worker through the other CLI with `../rigor/scripts/second-opinion.sh`. In a race, make it one arm. In a coverage swarm, give it one slice, or have it independently re-check a slice a host worker also covers, so the report includes a cross-model check.
    - For a model race, name each arm's model up front.
-5. Give every worker that writes its own worktree. Claude Code host workers: `isolation: "worktree"`. Codex host workers and the other-CLI worker: `git worktree add -b swarm/<slug>/<n> ../swarm-<slug>-<n> <ref>`, then name the path in the brief or pass `--write --cd <worktree>` to the script. When a worker must start from a specific branch or commit, use it as `<ref>`.
+5. Give every worker that writes its own worktree, set up as in the `arena` skill's [Isolating candidates](../arena/SKILL.md#isolating-candidates), with branch `swarm/<slug>/<n>` at `../swarm-<slug>-<n>`.
 6. When workers verify or measure commits, each brief names the exact SHAs. A measurement brief also names the method: the sample count, what one sample is, and the run order. The worker records both in its result.
 
 ## Phase B: Fan out
@@ -39,4 +39,4 @@ Keep a compact results table, one-line issues with evidence, and an explicit lis
 
 ## Phase D: Report
 
-Return one report in the reply: the results table, the issue one-liners, gaps and dropouts, the selection rule if it was a race, and which workers ran on the other CLI (or that it wasn't available). Remove any worktrees you created once their results are captured.
+Return one report in the reply: the results table, the issue one-liners, gaps and dropouts, the selection rule if it was a race, and which workers ran on the other CLI (or that the seat fell back to a host subagent). Remove any worktrees you created once their results are captured.

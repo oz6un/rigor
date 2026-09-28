@@ -19,7 +19,7 @@ Skip this phase only for greenfield work with no surrounding system to integrate
 
 Run the `arena` skill with the design-sketch task and the Phase A artifacts. Use [`references/runner-prompt.md`](references/runner-prompt.md) as each candidate's prompt. Each candidate produces a design package shaped by [`references/rationale-template.md`](references/rationale-template.md).
 
-Panel: arena's default applies (host subagents on your strongest model plus one candidate from the other CLI through `second-opinion.sh`). Because a design sketch is code, give each candidate its own worktree as arena describes. For architect, give each host candidate a different structural starting direction in its prompt so the panel explores whole alternative shapes rather than variations on one.
+Panel: arena's default, including its other-CLI candidate. A design sketch is code, so each candidate gets its own worktree as arena describes. For architect, give each host candidate a different structural starting direction in its prompt so the panel explores whole alternative shapes rather than variations on one.
 
 - Require at least two structurally distinct candidates before combining, even if the first looks sufficient (the `exhaust-the-design-space` principle). Distinct means a different overall shape, not a point fix inside the same shape.
 - Screen every candidate against [`references/design-red-flags.md`](references/design-red-flags.md) before combining. Reject or revise shallow modules, information leakage, temporal decomposition, and pass-through methods.

@@ -35,12 +35,11 @@ Each reviewer's prompt is its lens file followed by [`references/reviewer-rules.
 | Lens | Prompt | Runs on |
 |---|---|---|
 | Judgment | [`references/judgment-reviewer.md`](references/judgment-reviewer.md) | Host subagent, strongest model |
-| Tooling | [`references/tooling-reviewer.md`](references/tooling-reviewer.md) | The other CLI, through the `second-opinion.sh` script in the `rigor` skill's `scripts/` directory (`../rigor/scripts/second-opinion.sh`) |
+| Tooling | [`references/tooling-reviewer.md`](references/tooling-reviewer.md) | The other CLI, through `../rigor/scripts/second-opinion.sh` |
 | Divergent | [`references/divergent-reviewer.md`](references/divergent-reviewer.md) | Host subagent, strongest model |
 
 - Host reviewers need to read code and use MCP tools (ticket trackers, chat, observability) to look up context the transcript references, so don't restrict them to a read-only agent type. Their prompt tells them not to edit files. In Claude Code, use a `general-purpose` agent; in Codex, the default agent.
 - The tooling reviewer runs read-only (the script's default). It may not have the same MCP servers configured; that's fine, since most tooling findings come from the transcript itself.
-- If the script exits 3, run the tooling reviewer as a third host subagent and mention the fallback in the summary.
 
 ## 3. Synthesize
 

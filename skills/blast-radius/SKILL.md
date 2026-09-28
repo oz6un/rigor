@@ -34,7 +34,7 @@ Level 4 is usually one small script that imports the same library version the ap
    - Follow references a symbol search misses: JSON an API returns, a database column, a wire format, another language reading the same bytes, a feature flag, code three hops downstream.
 4. **Assess each risk honestly.** Give each a realistic likelihood and cost. Keep the confirmed risks, and list the ones you checked and cleared separately. Follow `why`'s evidence rules: cite a real `file:line`, a search that finds nothing is still a result, and never invent a caller or an API.
 5. **Prove the key fact.** Write a script or test that runs the real code, run it, and include the output.
-6. **For a large or wide change, use `arena`.** Put the same question to several independent reviewers (host subagents plus the other model through the `second-opinion.sh` script in the `rigor` skill's `scripts/` directory) and merge the answers. Different models catch different real bugs.
+6. **For a large or wide change, get several independent reviewers.** Run `interrogate` on the diff, or `swarm` to put one question to several reviewers and merge the answers. Both include a reviewer on the other model; different models catch different real bugs.
 
 ## What to hand back
 

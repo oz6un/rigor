@@ -12,19 +12,11 @@ The goal is writing that a tired engineer understands on the first read. Four la
 3. How much does each sentence carry? (Simplified Technical English)
 4. Can any sentence be read two ways? (Global English)
 
-Apply all four, and apply `unslop` to everything this skill touches. `unslop` owns the catalog of word-level problems (AI vocabulary, filler, hedging, mannered prose, formatting tells), so this skill doesn't repeat it.
+Apply all four, and apply `unslop` to everything this skill touches. `unslop` owns word-level and sentence-level style (AI vocabulary, filler, hedging, active voice, sentence length, specificity, articles, punctuation, sentence-case headings, one name per thing or action), so this skill doesn't repeat it.
 
 The rules serve the reader. When a rule makes a sentence worse, fix the sentence another way or leave it alone.
 
-Use the codebase's own names. Write the real symbol, file, flag, or command, not a synonym or a description of it. If you find a jargon word that `unslop` doesn't list yet, propose it and its replacement as an addition to the abstract-metaphor-nouns rule in your reply, with the diff. Don't edit `unslop` yourself.
-
-## Keep it readable, not just correct
-
-A doc can follow every rule below and still read as machine-written: every sentence clipped to the same length, no view anywhere, nothing specific.
-
-- Vary sentence length. Short sentences make a point. Longer ones carry a fact together with its condition or consequence. Split a sentence that carries two unrelated points; keep a long one that carries one.
-- Have a view where the mode allows it. An explanation weighs trade-offs, so say what you conclude from them instead of listing pros and cons. Reference stays neutral.
-- Be specific. Not "schema changes can cause issues" but "a column rename fails the build".
+If you find a jargon word that `unslop` doesn't list yet, propose it and its replacement as an addition to the abstract-metaphor-nouns rule in your reply, with the diff. Don't edit `unslop` yourself.
 
 ## Pick the mode first (Diátaxis)
 
@@ -43,7 +35,7 @@ The same test works on a single sentence that seems out of place.
 
 **Reference.** Describe the thing and nothing else: no instructions, persuasion, or opinion. Be complete and state facts, options, limits, and errors without hedging. Mirror the structure of the thing described so readers can move between code and docs. Generate it from code where you can so it stays accurate.
 
-**Explanation.** One bounded topic, readable away from the product. The title should still make sense with "About..." in front of it. Start from a real "why" question and give context: design decisions, history, constraints, alternatives. This is the only mode where opinion belongs.
+**Explanation.** One bounded topic, readable away from the product. The title should still make sense with "About..." in front of it. Start from a real "why" question and give context: design decisions, history, constraints, alternatives. This is the only mode where opinion belongs: weigh the trade-offs and say what you conclude, instead of listing pros and cons.
 
 Don't mix modes. A reference table inside a tutorial, or an argument inside a how-to guide, should be split out and linked.
 
@@ -52,7 +44,6 @@ Source: diataxis.fr.
 ## Address the reader (Google developer style)
 
 - Write to "you", in the present tense. Use "will" only for things that happen later.
-- Say who does what: "the compiler checks", not "is checked".
 - Write instructions as commands ("Click **Submit**."), not "should be done".
 - Put the condition before the instruction: "To delete the document, click **Delete**." The reader can skip what doesn't apply.
 - Put the common case first and exceptions after.
@@ -60,7 +51,7 @@ Source: diataxis.fr.
 - Don't pre-announce features ("we will soon support...").
 - Don't start consecutive sentences with the same phrase.
 - Link text says where the link goes: the page title or a short description, never "click here". Prefer a sentence of context on the page to a link away from it.
-- Headings state the point, not just the topic ("Pick the mode first", not "Modes"), in sentence case. Task headings are verb phrases ("Create an instance"); concept headings are noun phrases. One h1 per page, and don't skip levels.
+- Headings state the point, not just the topic ("Pick the mode first", not "Modes"). Task headings are verb phrases ("Create an instance"); concept headings are noun phrases. One h1 per page, and don't skip levels.
 - Use numbered lists for sequences and bullets for everything else. Introduce a list with a complete sentence, and keep items parallel.
 - Put code in code font and UI labels in bold. Use the serial comma. Instead of "etc.", say up front that a list is partial.
 
@@ -68,13 +59,10 @@ Source: developers.google.com/style.
 
 ## Control how much each sentence carries (Simplified Technical English)
 
-- Give each instruction its own sentence.
+- Give each instruction its own sentence, and split a sentence that carries two unrelated points.
 - Consider splitting instructions longer than about 20 words and other sentences longer than about 25.
 - Put a warning or condition before the step it applies to.
-- Keep articles. "Remove backup file" reads two ways; "Remove the backup file" reads one.
 - Give each word one meaning. If "check" means inspect, don't also use it to mean restrain.
-- Use one verb per action. Don't write "start" in one place and "initiate" in another.
-- Write procedures as direct commands: "Install the component", not "The component must be installed".
 - Prefer a plain verb to an "-ing" form where you can. "-ing" words can play several grammatical roles and are easy to misread.
 
 Source: ASD-STE100, Issue 9.
@@ -88,10 +76,9 @@ Source: ASD-STE100, Issue 9.
 - Keep small words that show structure. "Ensure that the switch is off" keeps "that" so the sentence parses one way.
 - Repeat the article in a series when the items are distinct: "the client and the host".
 - When "and" or "or" could group two ways, use "both...and", "either...or", or restructure.
-- Use semicolons and em dashes sparingly. If a sentence depends on one to parse, split it.
 - Text in parentheses should be a complete phrase or its own sentence. Don't write plurals as "(s)".
 - Avoid slashes: write "a, b, or both" instead of "a/b" or "and/or".
-- Call each thing by one name everywhere. When editing, don't reword sentences whose meaning didn't change; the churn costs reviewers time.
+- When editing, don't reword sentences whose meaning didn't change; the churn costs reviewers time.
 - Avoid idioms, Latin abbreviations, and metaphors. Non-native readers, translators, and agents all parse plain constructions best.
 
 Source: Kohl, *The Global English Style Guide* (SAS Press).

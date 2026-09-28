@@ -34,8 +34,7 @@ Default panel, all launched at once:
 | C | The other CLI via `second-opinion.sh` | None; the full prompt as written |
 
 - Host reviewers: Claude Code, the Agent tool with `subagent_type: "Explore"` or a `general-purpose` agent told not to edit; Codex, spawn with `sandbox_mode = "read-only"`. Two host reviewers on the same model agree more often than two different models would, which is why A and B each get a focus line. The focus sets what to examine first; each still covers the whole rubric.
-- Reviewer C: write the filled prompt to a file and run the `second-opinion.sh` script in the `rigor` skill's `scripts/` directory (`../rigor/scripts/second-opinion.sh` from here) with its default read-only mode, from the repository root so it can read context: `second-opinion.sh --cd "$(git rev-parse --show-toplevel)" < prompt.txt`. Run it in the background alongside the host reviewers.
-- If the script exits 3, run C as a third host reviewer with no focus line, and say in the verdict that no second model family reviewed the change.
+- Reviewer C: write the filled prompt to a file and run it read-only from the repository root, in the background alongside the host reviewers: `../rigor/scripts/second-opinion.sh --cd "$(git rev-parse --show-toplevel)" < prompt.txt`. If the other CLI isn't installed, C is a third host reviewer with no focus line.
 
 The user can ask for more or fewer reviewers; extend or shrink the table, keeping one seat on the other CLI.
 

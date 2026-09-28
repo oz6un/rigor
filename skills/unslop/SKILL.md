@@ -59,7 +59,7 @@ The rules serve the reader. If following one makes a sentence worse, fix the sen
 
 ## Voice
 
-**Mannered prose.** Figurative language where a literal phrase exists: aphorisms ("wire it or delete it"), slogans ("green is not safe"), rhetorical fragments for effect, personified code ("the plan holds it"), figurative verbs ("rides along", "stands on"), and dramatic emphasis. Say the literal thing: "A passing CI run doesn't prove the change is correct, so verify each PR before merging." The abstract-metaphor-nouns rule covers the single-word version.
+**Mannered prose.** Figurative language where a literal phrase exists: aphorisms ("wire it or delete it"), slogans ("green is not safe"), rhetorical fragments for effect, personified code ("the plan holds it"), figurative verbs ("rides along", "stands on"), framing labels ("the key insight", "at its core", "TL;DR"), mirror sentences ("A without B, or B without A"), and dramatic emphasis. Say the literal thing: "A passing CI run doesn't prove the change is correct, so verify each PR before merging." The abstract-metaphor-nouns rule covers the single-word version.
 
 **Persona and performance.** Don't write in character. No in-jokes, mock drama, catchphrases, villain or hype voices, self-mythology, or deliberate lowercase affect. The text is instructions and facts for an engineer, not a performance.
 

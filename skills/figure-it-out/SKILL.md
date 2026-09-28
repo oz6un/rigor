@@ -35,7 +35,7 @@ Then execute it. Add the designed steps to the todo list as concrete items betwe
 Treat each unit as an experiment: state the hypothesis, make the smallest change, measure against the done check on the real artifact, and keep the change if it moved things forward or revert it if not. Verify each unit before starting the next instead of batching checks at the end (the `sequence-verifiable-units` principle).
 
 - Verify by inspecting the artifact, not a worker's self-report. When something passes too easily, suspect the way you're observing it before trusting the system.
-- Pair delegated work with a reviewer; for high-stakes units, get that review from the other CLI through the `second-opinion.sh` script in the `rigor` skill's `scripts/` directory. If a worker games the check, reset its work and tighten the brief. If the check itself is wrong, fix it in its own change instead of working around it.
+- Pair delegated work with a reviewer; for high-stakes units, get that review from the other CLI through `../rigor/scripts/second-opinion.sh`. If a worker games the check, reset its work and tighten the brief. If the check itself is wrong, fix it in its own change instead of working around it.
 - Report each verdict as VERIFIED, NOT VERIFIED, or INCONCLUSIVE. Inconclusive is not a pass, and negative results stay in the report.
 
 ## Phase D: Keep the decision log
