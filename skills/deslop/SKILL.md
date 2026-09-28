@@ -16,7 +16,6 @@ Review the diff against the base branch (default `main`) and remove clutter that
 - Defensive checks and `try`/`catch` blocks that are unusual for a trusted internal code path.
 - Casts to `any` (or `as` casts) that exist only to silence a type error.
 - Deep nesting that early returns would flatten.
-- Tests this branch added that don't each catch a regression no other test catches: ones that repeat existing coverage, test trivial code, or check implementation instead of behavior. Keep the bug's reproduction, a refactor's behavior pin, and for new behavior its main case plus the edge cases a plausible wrong implementation would get wrong. Never remove existing tests here.
 - Anything else inconsistent with the file and the surrounding code: naming, error handling, logging, helper patterns.
 
 ## Constraints
