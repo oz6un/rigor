@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { type CliRuntime, main, parseArgs } from "./cli.ts";
 import { fakeReader, passingCheck } from "./fakes.test-helper.ts";
-import { renderPretty } from "./render.ts";
+import { renderJson, renderPretty } from "./render.ts";
 import type { GitHubReader, WatcherVerdict } from "./types.ts";
 import { parsePrNumber } from "./types.ts";
 
@@ -138,6 +138,13 @@ describe("rendering", () => {
     ],
   } satisfies WatcherVerdict;
 
+  it("emits compact valid JSON by default", () => {
+    const rendered = renderJson(status);
+    expect(rendered.endsWith("\n")).toBe(true);
+    expect(rendered.indexOf("\n")).toBe(rendered.length - 1);
+    expect(JSON.parse(rendered)).toEqual(status);
+  });
+
   it("renders the Markdown table from the same verdict only", () => {
     const rendered = renderPretty(status);
     expect(rendered).toContain("| PR | CI | Review | Merge |");
@@ -189,7 +196,6 @@ describe("main", () => {
     );
     expect(code).toBe(4);
     expect(harness.stdout).toHaveLength(1);
-    expect(harness.stdout[0].endsWith("\n")).toBe(true);
     expect(JSON.parse(harness.stdout[0])).toMatchObject({
       kind: "BLOCKER",
       exitCode: 4,

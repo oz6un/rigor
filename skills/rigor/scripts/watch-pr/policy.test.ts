@@ -62,7 +62,6 @@ describe("readiness truth table", () => {
       ).toBe(expected);
     }
   });
-
 });
 
 describe("snapshot query planning", () => {
