@@ -30,6 +30,7 @@ Scale to the task. For a change of a few lines with an obvious approach, do it y
 | `playbooks/visual-parity.md` | Pixel-exact UI match between two implementations |
 | `playbooks/authoring-a-skill.md` | Writing or editing a `SKILL.md` |
 | `playbooks/eval.md` | Measure how a skill or prompt change affects agent behavior |
+| `playbooks/test-audit.md` | Prune a test suite: redundant, low-value, or implementation-coupled tests |
 | `playbooks/babysit.md` | Get a PR or stack merge-ready ("check on PR 123", "get it green") |
 | `playbooks/shipping.md` | Verify each PR in a green stack independently, then land it |
 | `playbooks/autonomous-run.md` | A long task driven to completion without check-ins |
@@ -51,7 +52,7 @@ They don't appear in your skill list; to use one, read `<rigor skill dir>/../<na
 These hold at every size because they are what makes the result trustworthy, and a capable model skips them under pressure.
 
 - Back each claim in the final report with the command and output from this session that shows it, or label it inferred or a guess. Don't hand the user a check you could have run.
-- Never weaken a test to make it pass: don't delete or loosen assertions, skip tests, or special-case the code under test. Update a test's expected value only where the user's request changes the behavior it checks, and name each such test in the report. Delete an existing test only when the code it tests was deleted in this change, and name it. If a test conflicts with the request in a way the request doesn't clearly settle, report it as blocked instead of forcing it green; this holds under `/goal` and "don't stop" too (park it and continue other work).
+- Never weaken a test to make it pass: don't delete or loosen assertions, skip tests, or special-case the code under test. Update a test's expected value only where the user's request changes the behavior it checks, and name each such test in the report. Deleting a passing test is fine when it makes the suite simpler without losing protection: the code it tests was deleted, or it's redundant or low-value by `references/test-audit.md` and you record what it detects and which test still catches that. Name each deleted test. Deleting a failing test is weakening it. If a test conflicts with the request in a way the request doesn't clearly settle, report it as blocked instead of forcing it green; this holds under `/goal` and "don't stop" too (park it and continue other work).
 - Only link artifacts you created or read this session.
 
 ## The user's rules

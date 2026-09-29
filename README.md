@@ -85,6 +85,7 @@ See [docs/guide](docs/guide/README.md) for a longer walkthrough.
 | Visual parity | Pixel-exact match between two UI implementations |
 | Authoring a skill | Writing or editing a `SKILL.md` |
 | Eval | Measure how a skill or prompt change affects agent behavior |
+| Test audit | Prune redundant or low-value tests, with evidence for each deletion |
 | Babysit | Get a PR or stack to merge-ready: conflicts, review threads, CI |
 | Shipping | Verify each PR in a green stack independently, then land it bottom-up |
 | Autonomous run | Drive a long task to completion without stopping |
@@ -150,4 +151,4 @@ docs/guide/            Walkthrough
 
 ## License
 
-MIT. Includes work from pstack (Lauren Tan) and cursor-team-kit (Cursor), both MIT.
+MIT. Includes work from pstack (Lauren Tan), cursor-team-kit (Cursor), and OpenClaw's test-audit skill (OpenClaw Foundation), all MIT.

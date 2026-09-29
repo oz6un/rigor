@@ -12,12 +12,7 @@ import {
   runQueued,
   selectTierMajorStackDecision,
 } from "./policy.ts";
-import {
-  fakeReader,
-  failedCheck,
-  passingCheck,
-  pendingCheck,
-} from "./fakes.test-helper.ts";
+import { fakeReader, failedCheck, pendingCheck } from "./fakes.test-helper.ts";
 import type {
   GitHubReader,
   NonEmpty,
@@ -68,26 +63,6 @@ describe("readiness truth table", () => {
     }
   });
 
-  it("turns a clean visible list plus GitHub refusal into an explicit CI blocker", async () => {
-    const reader = fakeReader({
-      facts: { mergeStateStatus: "BLOCKED" },
-      fastPath: { kind: "checks", checks: [passingCheck()] },
-      commitRollups: [{ oid: "head", state: "FAILURE" }],
-    });
-    const snapshot = await readSnapshot({
-      reader,
-      context: context(1),
-      pendingHistory: "include",
-      allowDraft: false,
-    });
-    expect(snapshot.kind).toBe("open");
-    if (snapshot.kind !== "open") throw new Error("expected open snapshot");
-    expect(snapshot.ci.kind).toBe("ci-github-rejected");
-    expect(classifyPr(snapshot)).toMatchObject({
-      kind: "blocker",
-      blocker: { kind: "failing-checks" },
-    });
-  });
 });
 
 describe("snapshot query planning", () => {

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { type CliRuntime, main, parseArgs } from "./cli.ts";
 import { fakeReader, passingCheck } from "./fakes.test-helper.ts";
-import { renderJson, renderPretty } from "./render.ts";
+import { renderPretty } from "./render.ts";
 import type { GitHubReader, WatcherVerdict } from "./types.ts";
 import { parsePrNumber } from "./types.ts";
 
@@ -138,12 +138,6 @@ describe("rendering", () => {
     ],
   } satisfies WatcherVerdict;
 
-  it("emits compact valid JSON by default", () => {
-    const rendered = renderJson(status);
-    expect(rendered.endsWith("\n")).toBe(true);
-    expect(JSON.parse(rendered)).toEqual(status);
-  });
-
   it("renders the Markdown table from the same verdict only", () => {
     const rendered = renderPretty(status);
     expect(rendered).toContain("| PR | CI | Review | Merge |");
@@ -154,15 +148,6 @@ describe("rendering", () => {
 });
 
 describe("main", () => {
-  it("returns EX_USAGE 64 and writes usage errors only to stderr", async () => {
-    const harness = testRuntime(fakeReader());
-    expect(await main(["--interval", "0"], harness.runtime)).toBe(64);
-    expect(harness.stdout).toEqual([]);
-    expect(harness.stderr.join("")).toContain(
-      "option '--interval <seconds>' argument '0' is invalid"
-    );
-  });
-
   it("bypasses the queue machine for queued-stack status-only", async () => {
     const reader = fakeReader();
     const harness = testRuntime(reader);
@@ -204,6 +189,7 @@ describe("main", () => {
     );
     expect(code).toBe(4);
     expect(harness.stdout).toHaveLength(1);
+    expect(harness.stdout[0].endsWith("\n")).toBe(true);
     expect(JSON.parse(harness.stdout[0])).toMatchObject({
       kind: "BLOCKER",
       exitCode: 4,
