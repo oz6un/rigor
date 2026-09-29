@@ -9,24 +9,23 @@ marker file under ~/.rigor/sessions means "on":
   any prompt while on                 -> one-line reminder
   SessionStart compact/resume while on -> tell the model to re-read SKILL.md now, because
                                           compaction drops or truncates the skill's text
-  SessionStart startup                -> at most once a day, start scripts/auto-update.sh detached
-                                          (off if ~/.rigor/no-auto-update exists)
+  SessionStart startup                -> start scripts/auto-update.sh detached; it decides whether
+                                          to update (at most once a day)
 
 The state lives in the file, not the conversation, so compaction can't lose an "off".
 Never exit 2: in UserPromptSubmit that blocks the user's prompt.
 """
 import json
-import subprocess
 import os
 import re
+import subprocess
 import sys
 import time
 from pathlib import Path
 
 SKILL = Path(__file__).resolve().parent.parent / "SKILL.md"
-UPDATER = SKILL.parent.parent.parent / "scripts" / "auto-update.sh"
-RIGOR_HOME = Path.home() / ".rigor"
-STATE = RIGOR_HOME / "sessions"
+UPDATER = Path(__file__).resolve().parents[3] / "scripts" / "auto-update.sh"
+STATE = Path.home() / ".rigor" / "sessions"
 # /rigor or $rigor as its own word, optionally followed by punctuation ("/rigor: fix x");
 # not /rigor-agent or /rigorous, and not inside `quotes`.
 ON = re.compile(r"(^|\s)[/$]rigor(?=[\s:;,.!?)]|$)")
@@ -34,7 +33,6 @@ ON = re.compile(r"(^|\s)[/$]rigor(?=[\s:;,.!?)]|$)")
 OFF = re.compile(r"^\s*[/$]?rigor\s+off\b", re.I)
 KEEP_DAYS = 30
 REREAD_COOLDOWN = 120
-UPDATE_EVERY = 86400
 
 
 def reminder(event_name, source):
@@ -48,13 +46,6 @@ def reminder(event_name, source):
 
 
 def start_auto_update():
-    stamp = RIGOR_HOME / "last-update-check"
-    if (RIGOR_HOME / "no-auto-update").exists() or not UPDATER.exists():
-        return
-    if stamp.exists() and time.time() - stamp.stat().st_mtime < UPDATE_EVERY:
-        return
-    RIGOR_HOME.mkdir(parents=True, exist_ok=True)
-    stamp.touch()
     # Detached, with no pipes to the host: the host waits for the hook's output to close, so an
     # inherited pipe would hold the session start until the fetch finished.
     subprocess.Popen(["bash", str(UPDATER)], start_new_session=True, stdin=subprocess.DEVNULL,
@@ -70,10 +61,10 @@ def main():
     if not session or os.environ.get("RIGOR_NESTED"):
         return
     name = event.get("hook_event_name", "")
-    marker = STATE / session
     if name == "SessionStart" and event.get("source") == "startup":
         start_auto_update()
         return
+    marker = STATE / session
 
     if name == "UserPromptSubmit":
         prompt = event.get("prompt") or ""

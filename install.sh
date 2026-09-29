@@ -7,7 +7,7 @@
 # Skills and Claude Code agents are symlinks into this clone, so `git pull` (or a local edit)
 # takes effect in new sessions without reinstalling. Codex agents are copied, so rerun this
 # script after pulling if codex/agents/ changed.
-# The hook also runs scripts/auto-update.sh once a day at session start (off: ~/.rigor/no-auto-update).
+# The hook also starts scripts/auto-update.sh at session start, which updates at most once a day.
 set -euo pipefail
 
 root="$(cd "$(dirname "$0")" && pwd -P)"
@@ -104,4 +104,5 @@ if [[ ${#skipped[@]} -gt 0 ]]; then
 fi
 echo "Installed $count skills and $(ls "$root"/agents/*.md | wc -l | tr -d ' ') agents for Claude Code and Codex."
 echo "Codex only: open Codex, run /hooks, and trust rigor's two hooks (again after an update changes them)."
+echo "rigor updates itself from GitHub once a day at session start; to stop that: touch ~/.rigor/no-auto-update"
 echo "Then start a new session and type /rigor (Claude Code) or \$rigor (Codex). It stays on for the rest of that session."
