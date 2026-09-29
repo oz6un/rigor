@@ -7,13 +7,19 @@ set -u
 dir="$HOME/.rigor"
 [[ -e "$dir/no-auto-update" ]] && exit 0
 stamp="$dir/last-update-check"
-[[ -n "$(find "$stamp" -mmin -1440 2>/dev/null)" ]] && exit 0
+checked_today() { [[ -n "$(find "$stamp" -mmin -1440 2>/dev/null)" ]]; }
+checked_today && exit 0
 
+# One run at a time. The lock holds its owner's PID; a lock whose owner is gone was left by a
+# killed run and is taken over.
 mkdir -p "$dir"
 lock="$dir/update.lock"
-[[ -n "$(find "$lock" -maxdepth 0 -mmin +10 2>/dev/null)" ]] && rmdir "$lock"  # left by a killed run
+owner="$(cat "$lock/pid" 2>/dev/null)"
+if [[ -n "$owner" ]] && ! kill -0 "$owner" 2>/dev/null; then rm -rf "$lock"; fi
 mkdir "$lock" 2>/dev/null || exit 0
-trap 'rmdir "$lock"' EXIT
+echo $$ > "$lock/pid"
+trap 'rm -rf "$lock"' EXIT
+checked_today && exit 0  # another run finished while this one waited for the lock
 
 log="$dir/update.log"
 note() { echo "$(date '+%Y-%m-%d %H:%M:%S') $(echo "$*" | grep -v '^hint:' | tr -s '\n\t' '  ')" >> "$log"; tail -n 200 "$log" > "$log.tmp" && mv "$log.tmp" "$log"; }
@@ -38,14 +44,18 @@ if [[ -z "${GIT_SSH:-}" ]]; then
   ssh_cmd="${GIT_SSH_COMMAND:-$(git config core.sshCommand || echo ssh)}"
   export GIT_SSH_COMMAND="$ssh_cmd -o BatchMode=yes -o ConnectTimeout=10 -o ServerAliveInterval=15 -o ServerAliveCountMax=2"
 fi
-if ! out="$(git -c credential.helper= -c core.askPass= -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=20 \
+# A stuck fetch (a custom SSH transport, a stalled server) is killed after two minutes: perl's
+# alarm survives the exec into git.
+if ! out="$(perl -e 'alarm shift; exec @ARGV' "${RIGOR_FETCH_TIMEOUT:-120}" \
+    git -c credential.helper= -c core.askPass= -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=20 \
     fetch -q origin main 2>&1)"; then
-  note "fetch failed, retrying next session: $out"
+  note "fetch failed, retrying next session: ${out:-timed out}"
   exit 0
 fi
 target="$(git rev-parse FETCH_HEAD)"
 
 in_use  # again: you may have switched branches or started editing during the fetch
+git merge-base --is-ancestor HEAD "$target" || finish "skipped: main has local commits that origin/main doesn't"
 before="$(git rev-parse HEAD)"
 if ! out="$(git merge -q --ff-only --no-overwrite-ignore "$target" 2>&1)"; then
   finish "skipped: can't fast-forward main to ${target:0:7}: $out"

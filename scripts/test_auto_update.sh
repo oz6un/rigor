@@ -3,6 +3,8 @@
 # fast-forwards and reinstalls a clone that's behind, at most once a day and one run at a time,
 # while leaving clones in use alone. Local origin, clean environment, no network.
 set -uo pipefail
+# The test runs git itself: an inherited GIT_DIR would point those commands at your repo.
+unset $(git rev-parse --local-env-vars)
 root="$(cd "$(dirname "$0")/.." && pwd -P)"
 tmp="$(mktemp -d)"; [ -z "${KEEP:-}" ] || echo "kept: $tmp"
 trap '[ -n "${KEEP:-}" ] || rm -rf "$tmp"' EXIT
@@ -59,10 +61,10 @@ v4=$(release); new_day
 for _ in 1 2 3 4 5 6; do update & done; wait
 check "six simultaneous runs update once" bash -c "head_is() { [ \"\$(git -C '$tmp/clone' rev-parse HEAD)\" = \"\$1\" ]; }; head_is $v4 && [ \$(grep -c 'updated .* -> ${v4:0:7}' '$home/.rigor/update.log') -eq 1 ] && [ ! -e '$home/.rigor/update.lock' ]"
 
-vl=$(release); new_day; mkdir "$home/.rigor/update.lock"; update
-check "while another run holds the lock, a run does nothing" bash -c "! git -C '$tmp/clone' merge-base --is-ancestor $vl HEAD 2>/dev/null"
-touch -t 202001010000 "$home/.rigor/update.lock"; update
-check "  a lock left by a killed run (over 10 minutes old) is cleared" head_is "$vl"
+vl=$(release); new_day; mkdir "$home/.rigor/update.lock"; echo $$ > "$home/.rigor/update.lock/pid"; update
+check "while a live run holds the lock, a run does nothing" bash -c "! git -C '$tmp/clone' merge-base --is-ancestor $vl HEAD 2>/dev/null"
+true & dead=$!; wait $dead; echo $dead > "$home/.rigor/update.lock/pid"; update
+check "  a lock left by a killed run is taken over" head_is "$vl"
 
 v5=$(release); new_day
 git -C "$tmp/clone" remote set-url origin "$tmp/nowhere"; update
@@ -86,13 +88,21 @@ check "uncommitted changes: skipped, clone untouched" bash -c "$(declare -f head
 git -C "$tmp/clone" checkout -q README.md && git -C "$tmp/clone" checkout -q -b feature; new_day; update
 check "not on main: skipped" bash -c "$(declare -f logged); home='$home'; logged \"isn't on main\""
 git -C "$tmp/clone" checkout -q main && g -C "$tmp/clone" commit -q --allow-empty -m mine; new_day; update
-check "local commits on main: skipped, the commit kept" bash -c "$(declare -f logged); home='$home'; logged \"can't fast-forward\" && [ \"\$(git -C '$tmp/clone' log -1 --format=%s)\" = mine ]"
+check "local commits on main: skipped, the commit kept" bash -c "$(declare -f logged); home='$home'; logged 'local commits' && [ \"\$(git -C '$tmp/clone' log -1 --format=%s)\" = mine ]"
+g -C "$tmp/clone" reset -q --hard "$v7"
+g -C "$tmp/origin" reset -q --hard "$v7"; g -C "$tmp/clone" commit -q --allow-empty -m ahead; new_day; update
+check "local commits and nothing new upstream: skipped, not installed" bash -c "$(declare -f logged); home='$home'; logged 'local commits' && [ \"\$(cat '$home/.rigor/installed-rev')\" != \"\$(git -C '$tmp/clone' rev-parse HEAD)\" ]"
 g -C "$tmp/clone" reset -q --hard "$v7"
 
 echo mine > "$tmp/clone/notes.txt"; echo notes.txt >> "$tmp/clone/.git/info/exclude"
 echo theirs > "$tmp/origin/notes.txt"; v9=$(release); new_day; update
 check "an ignored local file the update would overwrite: skipped, file kept" bash -c "grep -qx mine '$tmp/clone/notes.txt' && ! git -C '$tmp/clone' merge-base --is-ancestor $v9 HEAD 2>/dev/null"
 rm "$tmp/clone/notes.txt"
+
+git -C "$tmp/clone" remote set-url origin "git@example.invalid:x.git"; git -C "$tmp/clone" config core.sshCommand "sleep 30 #"
+new_day; s=$(now); update RIGOR_FETCH_TIMEOUT=2; e=$(now)
+check "a hung fetch is killed and retried next session ($(perl -e "printf '%.1f', $e-$s")s)" bash -c "perl -e 'exit(!($e-$s < 10))' && tail -1 '$home/.rigor/update.log' | grep -q 'fetch failed' && [ ! -e '$home/.rigor/update.lock' ]"
+git -C "$tmp/clone" remote set-url origin "$tmp/origin"; git -C "$tmp/clone" config --unset core.sshCommand
 
 touch "$home/.rigor/no-auto-update"; new_day; update
 check "~/.rigor/no-auto-update turns it off" bash -c "! git -C '$tmp/clone' merge-base --is-ancestor $v9 HEAD 2>/dev/null"
