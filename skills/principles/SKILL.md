@@ -35,7 +35,7 @@ Each principle is a short file in this directory. Use the line after each name t
 - [`prove-it-works`](prove-it-works.md): before declaring a task done. Check the real artifact (run it, read the actual value, inspect the diff), not a proxy or "it compiles".
 - [`fix-root-causes`](fix-root-causes.md): debugging. Reproduce first, keep asking why until you reach the cause, and fix it there.
 - [`sequence-verifiable-units`](sequence-verifiable-units.md): multi-step work and how you stack commits and PRs. Split the work into small units that each end in a check, and verify each before starting the next.
-- [`test-behavior-not-implementation`](test-behavior-not-implementation.md): writing, changing, or keeping a test. Call the code the way its users do and assert against a literal expected value. If the test would still pass with every imported function returning `undefined`, fix it (or delete it if you added it in this change).
+- [`test-behavior-not-implementation`](test-behavior-not-implementation.md): writing, changing, or keeping a test. Call the code the way its users do and assert against a literal expected value. If the test would still pass with every imported function returning `undefined`, fix it or delete it.
 
 ## Delegation
 
