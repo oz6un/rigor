@@ -10,15 +10,12 @@ stamp="$dir/last-update-check"
 checked_today() { [[ -n "$(find "$stamp" -mmin -1440 2>/dev/null)" ]]; }
 checked_today && exit 0
 
-# One run at a time. The lock holds its owner's PID; a lock whose owner is gone was left by a
-# killed run and is taken over.
+# One run at a time. A lock older than 10 minutes was left by a killed or stuck run.
 mkdir -p "$dir"
 lock="$dir/update.lock"
-owner="$(cat "$lock/pid" 2>/dev/null)"
-if [[ -n "$owner" ]] && ! kill -0 "$owner" 2>/dev/null; then rm -rf "$lock"; fi
+[[ -n "$(find "$lock" -maxdepth 0 -mmin +10 2>/dev/null)" ]] && rmdir "$lock"
 mkdir "$lock" 2>/dev/null || exit 0
-echo $$ > "$lock/pid"
-trap 'rm -rf "$lock"' EXIT
+trap 'rmdir "$lock"' EXIT
 checked_today && exit 0  # another run finished while this one waited for the lock
 
 log="$dir/update.log"
@@ -44,12 +41,9 @@ if [[ -z "${GIT_SSH:-}" ]]; then
   ssh_cmd="${GIT_SSH_COMMAND:-$(git config core.sshCommand || echo ssh)}"
   export GIT_SSH_COMMAND="$ssh_cmd -o BatchMode=yes -o ConnectTimeout=10 -o ServerAliveInterval=15 -o ServerAliveCountMax=2"
 fi
-# A stuck fetch (a custom SSH transport, a stalled server) is killed after two minutes: perl's
-# alarm survives the exec into git.
-if ! out="$(perl -e 'alarm shift; exec @ARGV' "${RIGOR_FETCH_TIMEOUT:-120}" \
-    git -c credential.helper= -c core.askPass= -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=20 \
+if ! out="$(git -c credential.helper= -c core.askPass= -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=20 \
     fetch -q origin main 2>&1)"; then
-  note "fetch failed, retrying next session: ${out:-timed out}"
+  note "fetch failed, retrying next session: $out"
   exit 0
 fi
 target="$(git rev-parse FETCH_HEAD)"

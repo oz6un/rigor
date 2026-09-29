@@ -61,10 +61,10 @@ v4=$(release); new_day
 for _ in 1 2 3 4 5 6; do update & done; wait
 check "six simultaneous runs update once" bash -c "head_is() { [ \"\$(git -C '$tmp/clone' rev-parse HEAD)\" = \"\$1\" ]; }; head_is $v4 && [ \$(grep -c 'updated .* -> ${v4:0:7}' '$home/.rigor/update.log') -eq 1 ] && [ ! -e '$home/.rigor/update.lock' ]"
 
-vl=$(release); new_day; mkdir "$home/.rigor/update.lock"; echo $$ > "$home/.rigor/update.lock/pid"; update
-check "while a live run holds the lock, a run does nothing" bash -c "! git -C '$tmp/clone' merge-base --is-ancestor $vl HEAD 2>/dev/null"
-true & dead=$!; wait $dead; echo $dead > "$home/.rigor/update.lock/pid"; update
-check "  a lock left by a killed run is taken over" head_is "$vl"
+vl=$(release); new_day; mkdir "$home/.rigor/update.lock"; update
+check "while another run holds the lock, a run does nothing" bash -c "! git -C '$tmp/clone' merge-base --is-ancestor $vl HEAD 2>/dev/null"
+touch -t 202001010000 "$home/.rigor/update.lock"; update
+check "  a lock over 10 minutes old (a killed or stuck run) is taken over" head_is "$vl"
 
 v5=$(release); new_day
 git -C "$tmp/clone" remote set-url origin "$tmp/nowhere"; update
@@ -98,11 +98,6 @@ echo mine > "$tmp/clone/notes.txt"; echo notes.txt >> "$tmp/clone/.git/info/excl
 echo theirs > "$tmp/origin/notes.txt"; v9=$(release); new_day; update
 check "an ignored local file the update would overwrite: skipped, file kept" bash -c "grep -qx mine '$tmp/clone/notes.txt' && ! git -C '$tmp/clone' merge-base --is-ancestor $v9 HEAD 2>/dev/null"
 rm "$tmp/clone/notes.txt"
-
-git -C "$tmp/clone" remote set-url origin "git@example.invalid:x.git"; git -C "$tmp/clone" config core.sshCommand "sleep 30 #"
-new_day; s=$(now); update RIGOR_FETCH_TIMEOUT=2; e=$(now)
-check "a hung fetch is killed and retried next session ($(perl -e "printf '%.1f', $e-$s")s)" bash -c "perl -e 'exit(!($e-$s < 10))' && tail -1 '$home/.rigor/update.log' | grep -q 'fetch failed' && [ ! -e '$home/.rigor/update.lock' ]"
-git -C "$tmp/clone" remote set-url origin "$tmp/origin"; git -C "$tmp/clone" config --unset core.sshCommand
 
 touch "$home/.rigor/no-auto-update"; new_day; update
 check "~/.rigor/no-auto-update turns it off" bash -c "! git -C '$tmp/clone' merge-base --is-ancestor $v9 HEAD 2>/dev/null"
