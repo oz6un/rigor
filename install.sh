@@ -22,7 +22,10 @@ codex_hooks="${CODEX_HOME:-$HOME/.codex}/hooks.json"
 mode_hook="$root/skills/rigor/scripts/mode-hook.py"
 mode="${1:-install}"
 
-ours() { [[ -L "$1" && "$(readlink "$1")" == "$root/"* ]]; }
+# A link is ours if it points into this clone or into another rigor clone (moving to a new clone
+# takes the links over). A skill or agent link points at <clone>/<dir>/<name>.
+is_clone() { [[ -f "$1/install.sh" && -f "$1/skills/rigor/scripts/mode-hook.py" ]]; }
+ours() { [[ -L "$1" ]] || return 1; local t; t="$(readlink "$1")"; [[ "$t" == "$root/"* ]] || is_clone "${t%/*/*}"; }
 stamp="# installed by rigor's install.sh"
 # A Codex agent file is ours if it carries the stamp, or is an unstamped copy from an older install.
 ours_toml() { [[ -f "$2" ]] && { [[ "$(head -1 "$2")" == "$stamp"* ]] || cmp -s "$1" "$2"; }; }
@@ -32,12 +35,14 @@ link() {
   local target="$1" dest="$2"
   if ours "$dest" || [[ -L "$dest" && ! -e "$dest" ]]; then
     ln -sfn "$target" "$dest"
+    linked=$((linked + 1))
   elif [[ -e "$dest" || -L "$dest" ]]; then
     echo "skip $dest: already exists and isn't from this clone" >&2
     skipped+=("$dest")
     return
   else
     ln -s "$target" "$dest"
+    linked=$((linked + 1))
   fi
 }
 
@@ -73,13 +78,12 @@ for dir in "$claude_skills" "$codex_skills" "$claude_agents"; do
   for entry in "$dir"/*; do ours "$entry" && [[ ! -e "$entry" ]] && rm "$entry"; done
 done
 
-count=0
+linked=0
 for skill in "$root"/skills/*/; do
   [[ -f "$skill/SKILL.md" ]] || continue
   name="$(basename "$skill")"
   link "$root/skills/$name" "$claude_skills/$name"
   link "$root/skills/$name" "$codex_skills/$name"
-  count=$((count + 1))
 done
 
 for agent in "$root"/agents/*.md; do
@@ -102,7 +106,7 @@ if [[ ${#skipped[@]} -gt 0 ]]; then
   echo "rigor will use yours in their place. Rename or remove them and rerun to use rigor's:" >&2
   printf '  %s\n' "${skipped[@]}" >&2
 fi
-echo "Installed $count skills and $(ls "$root"/agents/*.md | wc -l | tr -d ' ') agents for Claude Code and Codex."
+echo "Installed from $root: $linked skill and agent links for Claude Code and Codex."
 echo "Codex only: open Codex, run /hooks, and trust rigor's two hooks (again after an update changes them)."
 echo "rigor updates itself from GitHub once a day at session start; to stop that: touch ~/.rigor/no-auto-update"
 echo "Then start a new session and type /rigor (Claude Code) or \$rigor (Codex). It stays on for the rest of that session."

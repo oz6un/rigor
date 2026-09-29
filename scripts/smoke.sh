@@ -37,6 +37,11 @@ check "  agents installed for both hosts" test -f "$tmp/home/.claude/agents/rigo
 check "  hooks registered for both hosts" grep -q mode-hook.py "$tmp/home/.claude/settings.json" "$tmp/home/.codex/hooks.json"
 check "  uninstall removes everything" bash -c "HOME='$tmp/home' CODEX_HOME='$tmp/home/.codex' '$root/install.sh' --uninstall >/dev/null && [ -z \"\$(find '$tmp/home/.claude/skills' '$tmp/home/.agents/skills' -mindepth 1)\" ] && ! grep -q mode-hook.py '$tmp/home/.codex/hooks.json' '$tmp/home/.claude/settings.json'"
 
+m="$tmp/moved-home"; mkdir -p "$tmp/clone2"; c2="$(cd "$tmp/clone2" && pwd -P)"
+(cd "$root" && git ls-files -co --exclude-standard -z | xargs -0 tar cf - | tar xf - -C "$c2")
+env HOME="$m" CODEX_HOME="$m/.codex" "$root/install.sh" >/dev/null 2>&1
+check "install from a second clone takes the links over" bash -c "HOME='$m' CODEX_HOME='$m/.codex' '$c2/install.sh' 2>&1 | grep -q 'Installed from $c2: 5[0-9] ' && [ \"\$(readlink '$m/.claude/skills/rigor')\" = '$c2/skills/rigor' ] && [ \"\$(readlink '$m/.claude/agents/rigor-agent.md')\" = '$c2/agents/rigor-agent.md' ] && grep -q '$c2/skills/rigor/scripts/mode-hook.py' '$m/.claude/settings.json' && ! grep -q '$root' '$m/.codex/agents/rigor-agent.toml'"
+
 h="$tmp/seeded"
 mkdir -p "$h/.claude" "$h/.codex/agents"
 cat > "$h/.claude/settings.json" <<'EOF'
