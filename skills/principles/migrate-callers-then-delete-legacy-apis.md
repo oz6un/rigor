@@ -5,7 +5,7 @@ Once a new internal API is the chosen design, migrate every caller and delete th
 - Don't keep an old API path just because internal callers still use it.
 - List the callers, migrate them, and delete the old API.
 - Treat temporary adapters as exceptions with a deadline, not as architecture.
-- Update tests to assert the new contract, and delete tests that only protected the old implementation's details.
+- Re-point tests at the new contract. Delete a test only when the user's request removes the behavior it checks (the rigor skill's Evidence rules), and name it.
 
 Applies when:
 

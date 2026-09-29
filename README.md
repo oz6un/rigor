@@ -45,7 +45,7 @@ Start a task with `/rigor` (Codex: `$rigor`):
 /rigor I'm going to bed. Land the stack even if CI flakes; I want everything merged by morning.
 ```
 
-Every "done" is backed by a command run in the session. The agent never weakens a test to make it pass; it changes a test only where your request changes the behavior the test checks and names each one, and it reports a test that contradicts your request as blocked instead of forcing it green.
+Every "done" is backed by a command run in the session. The agent never weakens a test to make it pass; it changes a test only where your request changes the behavior the test checks and names each one, and it reports a test that contradicts your request as blocked instead of forcing it green. It deletes a test only when your request removes the behavior it checks, or in a test audit you ask for, with evidence that nothing is lost.
 
 `rigor` matches the task to a playbook, copies the playbook's steps into a todo list, and calls the other skills when a step needs them. It stays on for the rest of the session: a hook adds a one-line reminder to every later turn, so a new task in the same session gets the same treatment. After compaction or a resume, the hook tells the model to re-read the rigor skill, since compaction drops the skill's text (Codex) or can cut it short (Claude Code). Start a message with "rigor off" to turn it off; that's recorded outside the conversation, so compaction can't undo it.
 

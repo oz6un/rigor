@@ -19,8 +19,8 @@ How to fix them: call the subject in the test body with one concrete input and a
 - For an absence, also assert the presence for a different input in the same test.
 - For a constant, test the code that reads it with one input instead of restating the value.
 - For a mock, assert the payload it received or the state after the call, not just that it was called.
-- If no such assertion is possible, delete the test. Before deleting an existing test, record the evidence in the rigor skill's `references/test-audit.md`; a failing test is never deleted to make it pass.
+- If no such assertion is possible, delete the test you wrote. An existing test is deleted only under the rigor skill's Evidence rules (the request removes its behavior, or a Test audit the user asked for); a failing test is never deleted to make it pass.
 
-For the full list of low-value patterns, duplicates across tests, and the evidence to record before deleting one, see the rigor skill's `references/test-audit.md`.
+For the full list of low-value patterns, what to keep (a restated default or string can be a published contract worth keeping), and the evidence to record before deleting an existing test, see the rigor skill's `references/test-audit.md`; it wins where the two disagree.
 
 Keep tests that check a relation across a table's rows (a key present in two tables, a parent that exists) and compile-time checks in `*.test-d.ts` files.
