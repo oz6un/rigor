@@ -29,6 +29,7 @@ expect_exit() {
 
 check "check.py" python3 "$root/scripts/check.py"
 check "mode hook state machine" python3 "$root/scripts/test_mode_hook.py"
+check "auto-update end to end" "$root/scripts/test_auto_update.sh"
 
 check "install.sh into a throwaway home" env HOME="$tmp/home" CODEX_HOME="$tmp/home/.codex" "$root/install.sh"
 check "  skills linked for both hosts" test -f "$tmp/home/.claude/skills/rigor/SKILL.md" -a -f "$tmp/home/.agents/skills/how/SKILL.md"

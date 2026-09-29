@@ -7,6 +7,7 @@
 # Skills and Claude Code agents are symlinks into this clone, so `git pull` (or a local edit)
 # takes effect in new sessions without reinstalling. Codex agents are copied, so rerun this
 # script after pulling if codex/agents/ changed.
+# The hook also runs scripts/auto-update.sh once a day at session start (off: ~/.rigor/no-auto-update).
 set -euo pipefail
 
 root="$(cd "$(dirname "$0")" && pwd -P)"

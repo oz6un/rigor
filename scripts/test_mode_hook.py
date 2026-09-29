@@ -9,6 +9,9 @@ from pathlib import Path
 
 HOOK = Path(__file__).resolve().parent.parent / "skills" / "rigor" / "scripts" / "mode-hook.py"
 home = tempfile.mkdtemp()
+# The hook starts a real auto-update of this clone on "startup"; auto-update has its own test.
+(Path(home) / ".rigor").mkdir()
+(Path(home) / ".rigor" / "no-auto-update").touch()
 
 
 def hook(event, session="s1", **fields):

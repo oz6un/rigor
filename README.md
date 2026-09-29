@@ -19,7 +19,7 @@ git clone https://github.com/oz6un/rigor.git ~/.local/share/rigor
 
 Codex runs a hook only after you approve it: open Codex, run `/hooks`, and trust rigor's two hooks (again whenever an update changes them). Claude Code needs no extra step. Start a new session afterwards.
 
-To update, pull and rerun the script (the rerun matters when a pull adds or removes a skill or agent, or changes the Codex agents):
+rigor updates itself: at most once a day, when a session starts, it fetches `main` in the background and reruns `install.sh`, so the session never waits on it. It leaves the clone alone when it isn't on `main`, has uncommitted changes, or has local commits, and it never prompts. The result is in `~/.rigor/last-update.log`. To turn it off, `touch ~/.rigor/no-auto-update`. To update by hand:
 
 ```bash
 git -C ~/.local/share/rigor pull && ~/.local/share/rigor/install.sh
