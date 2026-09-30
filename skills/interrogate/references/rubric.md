@@ -4,7 +4,7 @@ Use the sections that apply to the change. Not every section applies to every di
 
 ## Correctness
 
-Does the code do what the intent says?
+Does the code do what the user asked for?
 
 - Edge cases: empty input, null or undefined, boundary values, concurrent access.
 - Error handling: are errors caught, propagated, or silently swallowed?

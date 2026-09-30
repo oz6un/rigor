@@ -18,13 +18,13 @@ The deliverable is a verdict. Don't apply any changes.
 
 Write the diff to a file (for example `/tmp/interrogate-<slug>/diff.patch`) and list the surrounding files reviewers need for context. Reviewers get paths, not pasted contents, and can read the rest of the repo themselves.
 
-## Step 2: State the intent
+## Step 2: State the request
 
-Write one paragraph stating what the change is for, drawn from the user's message, commit messages, the PR description, and the code. If you're unsure of the intent, ask the user before continuing.
+Quote the user's request in their own words: the message that asked for the change, plus any later instruction that shapes it. Don't summarize it into your own reading; a summary slants the reviewers toward your view of the work. If you're about to report the work to the user, write that report to a file and give reviewers its path, so they check its claims too. If you can't tell what was asked, ask the user before continuing.
 
 ## Step 3: Spawn the reviewers
 
-Build the prompt from [`references/reviewer-prompt.md`](references/reviewer-prompt.md), filling in the intent, the diff path and context files, [`references/rubric.md`](references/rubric.md), and [`references/code-quality-review.md`](references/code-quality-review.md). Every reviewer applies the code-quality lens.
+Build the prompt from [`references/reviewer-prompt.md`](references/reviewer-prompt.md), filling in the request, the report path, the diff path and context files, [`references/rubric.md`](references/rubric.md), and [`references/code-quality-review.md`](references/code-quality-review.md). Every reviewer applies the code-quality lens.
 
 Default panel, all launched at once:
 
@@ -34,10 +34,10 @@ Default panel, all launched at once:
 | B | Host subagent, read-only, strongest model | Structure, complexity, and the code-quality lens first |
 | C | The other CLI via `second-opinion.sh` | None; the full prompt as written |
 
-- Host reviewers: Claude Code, the Agent tool with `subagent_type: "Explore"` or a `general-purpose` agent told not to edit; Codex, spawn with `sandbox_mode = "read-only"`. Two host reviewers on the same model agree more often than two different models would, which is why A and B each get a focus line. The focus sets what to examine first; each still covers the whole rubric.
-- Reviewer C: write the filled prompt to a file and run it read-only from the repository root, in the background alongside the host reviewers: `<this skill's dir>/../rigor/scripts/second-opinion.sh --cd "$(git rev-parse --show-toplevel)" < prompt.txt`. If the other CLI isn't installed, C is a third host reviewer with no focus line.
+- Host reviewers: Claude Code, the Agent tool with `subagent_type: "Explore"` or a `general-purpose` agent told not to edit the repository (it may run code in a scratch copy); Codex, spawn with `sandbox_mode = "read-only"`. Two host reviewers on the same model agree more often than two different models would, which is why A and B each get a focus line. The focus sets what to examine first; each still covers the whole rubric.
+- Reviewer C: give it a scratch copy it may write in, so it can reproduce what it finds. Commit the change first (untracked files wouldn't reach the copy), then `git worktree add --detach "$tmp" HEAD`. Write the filled prompt to a file and run it in the background alongside the host reviewers: `<this skill's dir>/../rigor/scripts/second-opinion.sh --write --cd "$tmp" < prompt.txt`. Remove the worktree afterwards. If the other CLI isn't installed, C is a third host reviewer with no focus line.
 
-The user can ask for more or fewer reviewers; extend or shrink the table, keeping one seat on the other CLI.
+The user can ask for more or fewer reviewers; extend or shrink the table, keeping one seat on the other CLI. A one-reviewer review (see the Opening a PR playbook) runs reviewer A alone.
 
 ## Step 4: Synthesize
 
@@ -63,8 +63,8 @@ For each finding, give the reviewers who raised it, the bucket, and a one-line r
 ## Output format
 
 ```
-### Intent
-> <the paragraph from step 2>
+### Request
+> <the user's request from step 2>
 
 ### Reviewers
 - A: host subagent (<model>), focus: correctness/security, <N> findings

@@ -4,7 +4,7 @@ The reviewers have reported. Your job is to filter, put findings in context, and
 
 ## Why this step matters
 
-Adversarial reviewers are useful because they're aggressive, but without context aggression produces noise. The reviewers saw a slice of the codebase and a one-paragraph intent. They don't know:
+Adversarial reviewers are useful because they're aggressive, but without context aggression produces noise. The reviewers saw a slice of the codebase and the user's request. They don't know:
 
 - What was already tried and rejected.
 - Constraints outside the code (timeline, dependencies, migration plans).
@@ -18,6 +18,12 @@ You have the full conversation. Use it.
 **Filler findings.** Reviewers tend to fill the space. With no critical issues to report, they inflate nits. If a reviewer's findings are all nits and style preferences, the code is probably fine; say so.
 
 **Hypothetical versus actual.** "What if someone passes null?" is a finding only if a caller can pass null. Trace the call site. If upstream validation or the type system prevents it, dismiss it. Reviewers working from a diff can't always see the whole call chain; you can.
+
+**Reproduced versus reasoned.** Act on a reproduced finding. Confirm a reasoned one yourself before acting on it, or put it under Consider.
+
+**Suggestions that add code.** Reviewers lean toward adding guards and machinery. Before accepting one, ask how likely the failure it guards against is; if it isn't, put it under Noted. A suggestion to remove something deserves the opposite bias.
+
+**Conflicts with the request.** A finding that argues with what the user asked for goes to the user, not into Act on or Dismissed.
 
 **Premature abstraction.** Reviewers often suggest extracting functions or adding interfaces. Ask whether the code needs to vary in a second way. If not, the abstraction is premature, and simple inline code is better.
 

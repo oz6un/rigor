@@ -8,6 +8,14 @@ The last step of every other playbook. All PR operations use the GitHub CLI (`gh
 
 **Before opening.** Run `deslop` over the diff before committing and `no-comments` before requesting review. Write every PR title, PR description, and commit body with `technical-writing` (every layer except Diátaxis), then run `unslop` over it.
 
+**Review before done.** After verifying the change, and before opening the PR or telling the user it's done, have someone other than you review it, scaled to what a mistake would cost:
+
+- The full `interrogate` panel when a mistake would be costly or hard to undo, or when the code runs where your tests don't reach: other people's machines and settings, concurrent runs, state left by earlier runs or versions, installs and updates, security.
+- One reviewer (`interrogate` with reviewer A alone) for other changes to behavior.
+- None for a small change whose behavior your tests fully cover; say so in the report.
+
+Fix what the verdict puts under Act on and verify the fix; review again only if the fix is substantial. A known blocker means the work isn't done. Bring findings that conflict with the user's request to the user.
+
 **Titles.** Use Conventional Commits: `type(scope): subject`, where type is `feat`, `fix`, `docs`, `refactor`, `test`, `chore`, or `perf`, and scope is the changed area (for example `rigor` or `watch-pr`). Keep the subject short and imperative, name a real symbol when one carries the change, and leave off the trailing period. Example: `fix(watch-pr): count review passes per run id`.
 
 **Descriptions.** The PR body is a briefing for a reviewer who has the diff: why the change exists, what's out of scope, and how you proved it works. The squash commit body is the PR body, so if it would push the squash commit past about 40 lines, cut it. Use these sections in order, and drop any with nothing to say:
