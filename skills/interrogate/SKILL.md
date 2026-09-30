@@ -37,7 +37,7 @@ Default panel, all launched at once:
 - Host reviewers: Claude Code, the Agent tool with `subagent_type: "Explore"` or a `general-purpose` agent told not to edit the repository (it may run code in a scratch copy); Codex, spawn with `sandbox_mode = "read-only"`. Two host reviewers on the same model agree more often than two different models would, which is why A and B each get a focus line. The focus sets what to examine first; each still covers the whole rubric.
 - Reviewer C: write the filled prompt to a file and run it read-only from the repository root, in the background alongside the host reviewers: `<this skill's dir>/../rigor/scripts/second-opinion.sh --cd "$(git rev-parse --show-toplevel)" < prompt.txt`. If the other CLI isn't installed, C is a third host reviewer with no focus line.
 
-The user can ask for more or fewer reviewers; extend or shrink the table, keeping one seat on the other CLI.
+The user can ask for more or fewer reviewers; extend or shrink the table, keeping the other-CLI seat unless the caller asks for fewer.
 
 ## Step 4: Synthesize
 

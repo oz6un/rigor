@@ -48,7 +48,7 @@ It writes `.agents/skills/verify-<app>/`, symlinked from `.claude/skills/` so bo
 /rigor open the pr. small ordered commits, evidence in the description.
 ```
 
-The Opening a PR playbook works from a worktree, arranges small ordered commits, cleans the diff and prose, and returns the link. Before it opens the PR or tells you the work is done, someone other than the agent reviews the change: the full `/interrogate` panel when a mistake would be costly or the code runs where tests don't reach (other people's machines, concurrent runs, installs, security), one reviewer for other behavior changes, and none for a small change the tests fully cover. Blockers get fixed first, and findings that conflict with your request come to you. Several narrow PRs are easier to review than one large one, and stacked follow-ups beat a growing branch.
+The Opening a PR playbook works from a worktree, arranges small ordered commits, cleans the diff and prose, and returns the link. Before it opens the PR or tells you the work is done, someone other than the agent reviews the change, scaled to what a mistake would cost (the Evidence rules in the [rigor skill](../../skills/rigor/SKILL.md)). Several narrow PRs are easier to review than one large one, and stacked follow-ups beat a growing branch.
 
 ## Babysit: get the PR to merge-ready
 

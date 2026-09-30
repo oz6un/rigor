@@ -17,7 +17,7 @@ You have the full conversation. Use it.
 
 **Filler findings.** Reviewers tend to fill the space. With no critical issues to report, they inflate nits. If a reviewer's findings are all nits and style preferences, the code is probably fine; say so.
 
-**Hypothetical versus actual.** "What if someone passes null?" is a finding only if a caller can pass null. Trace the call site. If upstream validation or the type system prevents it, dismiss it. Reviewers working from a diff can't always see the whole call chain; you can. A reproduced finding is real; a reasoned one you can't reproduce goes under Consider.
+**Hypothetical versus actual.** "What if someone passes null?" is a finding only if a caller can pass null. Trace the call site. If upstream validation or the type system prevents it, dismiss it. Reviewers working from a diff can't always see the whole call chain; you can.
 
 **Suggestions that add code.** Reviewers lean toward adding guards and machinery. Before accepting one, ask how likely the failure it guards against is; if it isn't, put it under Noted. A suggestion to remove something deserves the opposite bias.
 
