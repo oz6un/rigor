@@ -95,22 +95,27 @@ def run(args):
                 command += ["-m", model]
             command += ["-"]
         else:
-            # Only the user's own settings load: the checked-out repo's settings and hooks would run
-            # with the user's privileges, and no MCP servers are needed.
+            # Only the user's own settings load (the checked-out repo's settings and hooks would run
+            # with the user's privileges), with no hooks, MCP servers or memory writes. The repo's
+            # CLAUDE.md, dropped with its settings, comes back as plain text.
+            settings = {"disableAllHooks": True, "autoMemoryEnabled": False}
             command = [executable, "-p", "--permission-mode", "acceptEdits" if args.write else "plan",
                        "--no-session-persistence", "--output-format", "stream-json", "--verbose",
                        "--setting-sources", "user", "--strict-mcp-config"]
+            if (args.cd / "CLAUDE.md").is_file():
+                command += ["--append-system-prompt-file", str(args.cd / "CLAUDE.md")]
             model = os.environ.get("RIGOR_CLAUDE_MODEL")
             if model:
                 command += ["--model", model]
             if args.write:
                 # Like Codex's workspace-write: commands run without approval, but only in Claude's
                 # sandbox (no network), and the run fails if the sandbox can't start.
-                command += ["--tools", "Bash,Read,Edit,Write,Glob,Grep", "--settings", json.dumps({"sandbox": {
-                    "enabled": True, "autoAllowBashIfSandboxed": True,
-                    "failIfUnavailable": True, "allowUnsandboxedCommands": False}})]
+                command += ["--tools", "Bash,Read,Edit,Write,Glob,Grep"]
+                settings["sandbox"] = {"enabled": True, "autoAllowBashIfSandboxed": True,
+                                       "failIfUnavailable": True, "allowUnsandboxedCommands": False}
                 # Claude's sandbox can write its temp root, shared by every session; give it its own.
                 env["CLAUDE_CODE_TMPDIR"] = child_tmp
+            command += ["--settings", json.dumps(settings)]
         fd = os.open(trace, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
         with os.fdopen(fd, "w") as events, log.open("w") as errors:
             child = subprocess.run(command, input=prompt, text=True, cwd=args.cd,

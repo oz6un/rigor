@@ -70,6 +70,7 @@ class SecondOpinionTests(unittest.TestCase):
                               capture_output=True, env={**self.env, **env})
 
     def test_success_prints_only_answer_for_each_cli(self):
+        (self.base / "CLAUDE.md").write_text("Run tests with make check.\n")
         for cli in ("claude", "codex"):
             with self.subTest(cli=cli):
                 result = self.run_cli("--cli", cli, "--cd", str(self.base))
@@ -83,9 +84,15 @@ class SecondOpinionTests(unittest.TestCase):
                     # the user's own settings: the reviewed repo's hooks never run, and no MCP servers.
                     args = recorded["args"]
                     self.assertEqual(args[args.index("--permission-mode") + 1], "plan")
-                    self.assertNotIn("--settings", args)
                     self.assertEqual(args[args.index("--setting-sources") + 1], "user")
                     self.assertIn("--strict-mcp-config", args)
+                    # No hooks (the user's and plugins' run unsandboxed) and no memory writes; no sandbox.
+                    settings = json.loads(args[args.index("--settings") + 1])
+                    self.assertEqual(settings, {"disableAllHooks": True, "autoMemoryEnabled": False})
+                    self.assertIsNone(recorded["tmpdir"])
+                    # The repo's CLAUDE.md, which --setting-sources user drops, comes back as text.
+                    self.assertEqual(args[args.index("--append-system-prompt-file") + 1],
+                                     str(self.base / "CLAUDE.md"))
                     self.assertEqual(Path(recorded["cwd"]).resolve(), self.base.resolve())
 
     def test_a_denied_tool_still_returns_the_answer(self):
@@ -163,6 +170,11 @@ class SecondOpinionTests(unittest.TestCase):
         self.assertEqual(result.returncode, 2)
         self.assertIn("--cli", result.stderr)
 
+    def test_no_claude_md_means_no_appended_prompt(self):
+        result = self.run_cli("--cli", "claude", "--cd", str(self.base))
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertNotIn("--append-system-prompt-file", json.loads(self.record.read_text())["args"])
+
     def test_claude_write_runs_commands_only_inside_a_required_sandbox(self):
         # A candidate can run its tests, but only sandboxed: no fallback when the sandbox can't
         # start, and no unsandboxed retries.
@@ -172,7 +184,10 @@ class SecondOpinionTests(unittest.TestCase):
         self.assertIn("acceptEdits", args)
         self.assertNotIn("bypassPermissions", args)
         self.assertNotIn("--dangerously-skip-permissions", args)
-        sandbox = json.loads(args[args.index("--settings") + 1])["sandbox"]
+        settings = json.loads(args[args.index("--settings") + 1])
+        self.assertTrue(settings["disableAllHooks"])
+        self.assertFalse(settings["autoMemoryEnabled"])
+        sandbox = settings["sandbox"]
         self.assertEqual(sandbox, {"enabled": True, "autoAllowBashIfSandboxed": True,
                                    "failIfUnavailable": True, "allowUnsandboxedCommands": False})
         # The worktree's own settings and hooks don't apply, no MCP servers load, and Claude's temp
