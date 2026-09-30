@@ -60,6 +60,18 @@ class InstallTests(unittest.TestCase):
     def test_uninstall_removes_agents_absent_from_current_sources(self):
         self.check_removed_agent("--uninstall")
 
+    def test_uninstall_validates_hooks_before_removing_files(self):
+        result = self.install()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        config = self.home / ".codex/hooks.json"
+        original = '{"hooks":{"UserPromptSubmit":null}}'
+        config.write_text(original)
+        result = self.install("--uninstall")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(config.read_text(), original)
+        self.assertTrue((self.home / ".agents/skills/rigor/SKILL.md").is_file())
+        self.assertTrue((self.home / ".codex/agents/rigor-agent.toml").is_file())
+
     def check_removed_agent(self, *args):
         result = self.install()
         self.assertEqual(result.returncode, 0, result.stderr)

@@ -1,6 +1,7 @@
 import json
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -21,11 +22,15 @@ if cli == "codex":
     events = [{"type": "item.completed", "item": {"type": "command_execution", "command": "python3 check.py", "exit_code": 0}},
               {"type": "turn.completed", "usage": {}}]
     if mode == "error": events[-1] = {"type": "turn.failed", "error": {"message": "provider failed"}}
+    if mode == "recovered": events.insert(0, {"type": "error", "message": "Reconnecting..."})
 else:
     events = [{"type": "assistant", "message": {"content": [{"type": "tool_use", "name": "Read", "input": {"file_path": "README.md"}}]}},
               {"type": "result", "subtype": "success", "is_error": False, "result": "review complete", "permission_denials": []}]
     if mode == "denied": events[-1]["permission_denials"] = [{"tool_name": "Bash", "tool_input": {"command": "python3 check.py"}}]
     if mode == "error": events[-1].update(is_error=True, subtype="error_during_execution")
+if mode == "stdout_failure":
+    events[-1] = ({"type": "turn.failed", "error": {"message": "provider stdout failure"}} if cli == "codex"
+                  else {"type": "result", "subtype": "error_during_execution", "is_error": True, "errors": ["provider stdout failure"]})
 if mode == "missing": events.pop()
 if mode == "malformed":
     print("not json")
@@ -34,6 +39,7 @@ else:
 if mode == "nonzero":
     print("provider unavailable", file=sys.stderr)
     sys.exit(9)
+if mode == "stdout_failure": sys.exit(9)
 '''
 
 
@@ -44,13 +50,15 @@ class SecondOpinionTests(unittest.TestCase):
         self.base = Path(self.scratch.name)
         self.bin = self.base / "bin"
         self.bin.mkdir()
+        for name, target in (("python3", sys.executable), ("bash", shutil.which("bash")), ("dirname", shutil.which("dirname"))):
+            (self.bin / name).symlink_to(target)
         for cli in ("claude", "codex"):
             executable = self.bin / cli
             executable.write_text(f"#!{sys.executable}\n" + FAKE)
             executable.chmod(0o755)
         self.record = self.base / "record.json"
         self.env = {k: v for k, v in os.environ.items() if not k.startswith(("CODEX_", "RIGOR_")) and k != "CLAUDECODE"}
-        self.env.update(PATH=f"{self.bin}:{Path(sys.executable).parent}:/usr/bin:/bin",
+        self.env.update(PATH=str(self.bin),
                         HOME=str(self.base), RECORD=str(self.record), CODEX_THREAD_ID="host")
 
     def run_cli(self, *args, **env):
@@ -73,7 +81,21 @@ class SecondOpinionTests(unittest.TestCase):
         result = self.run_cli("--write", RESPONSE="denied")
         self.assertEqual(result.returncode, 4, result.stdout)
         self.assertIn("Bash", result.stderr)
+        self.assertIn("review complete", result.stderr)
         self.assertEqual(result.stdout, "")
+
+    def test_recovered_codex_error_does_not_override_completion(self):
+        result = self.run_cli("--cli", "codex", RESPONSE="recovered")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout, "review complete\n")
+
+    def test_provider_stdout_errors_remain_visible_without_a_trace(self):
+        for cli in ("claude", "codex"):
+            with self.subTest(cli=cli):
+                result = self.run_cli("--cli", cli, RESPONSE="stdout_failure")
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("provider stdout failure", result.stderr)
+                self.assertEqual(result.stdout, "")
 
     def test_invalid_or_failed_completion_is_not_success(self):
         for cli in ("claude", "codex"):
