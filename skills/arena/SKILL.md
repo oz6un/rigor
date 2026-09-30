@@ -34,6 +34,8 @@ Launch all candidates at once and let them run in parallel. Each prompt includes
 
   Drop `--write --cd` for a candidate that only returns text (a written design, a plan); its final message is the artifact. If the script exits 3, the other CLI isn't installed: start a host candidate for that seat instead (not a dropout) and note it in the synthesis record.
 
+  Name the verification command in the candidate's prompt. For Claude, `--write` permits edits but shell commands may still need authorization. Pass only the required permission rules, for example `--claude-allow-tool 'Bash(npm test *)'`; this option requires `--write` and is ignored for Codex. Exit 4 means denied tools or missing completion. Inspect the failure and treat required verification as unfinished, even if files were produced. Exit 0 confirms CLI completion, not that the candidate's tests passed.
+
 If a candidate produces nothing usable, continue with N-1 and record the dropout.
 
 Tell each candidate to leave its changes uncommitted, because the other CLI's sandbox may not be able to write the repo's `.git`.
@@ -59,7 +61,7 @@ For text artifacts, use `/tmp/arena-<slug>/candidate-<n>/`. When the arena is do
 
 After every candidate has finished, get one independent judge from a different model family than yours: run it through `<this skill's dir>/../rigor/scripts/second-opinion.sh` (read-only, the default). Give it the rubric and the candidates by path label. It scores each criterion per candidate and recommends a base with reasons. It runs while you do your own reading in Phase D. Don't start it while candidates are still writing.
 
-If the other CLI isn't installed, the judge is a read-only host subagent (Claude Code `Explore`; Codex `sandbox_mode = "read-only"`); note that it shares your model family.
+If the other CLI isn't installed, the judge is a read-only host subagent (Claude Code `Explore`; Codex `rigor-reviewer`); note that it shares your model family. The Codex role requests its sandbox through TOML, subject to parent runtime overrides. If unavailable, instruct a host subagent not to edit and report that the restriction is prompt-only.
 
 ## Phase D: Pick a base
 

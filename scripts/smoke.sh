@@ -28,6 +28,8 @@ expect_exit() {
 }
 
 check "check.py" python3 "$root/scripts/check.py"
+check "installer regressions" python3 "$root/scripts/test_install.py"
+check "external agent regressions" python3 "$root/scripts/test_second_opinion.py"
 check "mode hook state machine" python3 "$root/scripts/test_mode_hook.py"
 check "auto-update end to end" "$root/scripts/test_auto_update.sh"
 

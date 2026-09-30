@@ -65,7 +65,7 @@ These hold at every size because they are what makes the result trustworthy, and
 
 ## Subagents
 
-Delegate only large, independent tracks of work, such as a wide investigation or separate slices in parallel. Don't delegate what you can finish in a few tool calls, and keep one writer per file or branch. The independent verifiers a playbook requires (Shipping, verification rounds, a decision-log review) still run. Use the `rigor-agent` subagent for delegated work (Claude Code: `subagent_type: "rigor-agent"`; Codex: spawn the `rigor-agent` custom agent). You own its output: read its diff yourself.
+Delegate only large, independent tracks of work, such as a wide investigation or separate slices in parallel. Don't delegate what you can finish in a few tool calls, and keep one writer per file or branch. The independent verifiers a playbook requires (Shipping, verification rounds, a decision-log review) still run. Use `rigor-agent` for delegated implementation and `rigor-reviewer` for read-only investigation or review (Claude Code: `subagent_type`; Codex: select the custom agent). If `rigor-reviewer` is unavailable, instruct a host subagent not to edit and report that the restriction is prompt-only. You own its output: read its diff yourself.
 
 For a second opinion from another model family, pipe a prompt to `<rigor skill dir>/scripts/second-opinion.sh` (Claude Code calls `codex exec`, Codex calls `claude -p`; `--help` for options). Treat another reviewer's findings as hypotheses.
 
