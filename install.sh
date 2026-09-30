@@ -51,12 +51,16 @@ uninstall() {
     [[ -d "$dir" ]] || continue
     for entry in "$dir"/*; do ours "$entry" && rm "$entry" && echo "removed $entry"; done
   done
-  for toml in "$root"/codex/agents/*.toml; do
-    dest="$codex_agents/$(basename "$toml")"
+  for dest in "$codex_agents"/*.toml; do
+    toml="$root/codex/agents/$(basename "$dest")"
     if ours_toml "$toml" "$dest"; then rm "$dest" && echo "removed $dest"; fi
   done
   for config in "$claude_settings" "$codex_hooks"; do
-    if python3 "$root/scripts/hooks.py" remove "$config" "$mode_hook"; then echo "removed rigor's hook from $config"; fi
+    if python3 "$root/scripts/hooks.py" remove "$config" "$mode_hook"; then
+      echo "removed rigor's hook from $config"
+    else
+      [[ $? -eq 1 ]] || return 1
+    fi
   done
   return 0
 }
@@ -78,6 +82,13 @@ for dir in "$claude_skills" "$codex_skills" "$claude_agents"; do
   for entry in "$dir"/*; do ours "$entry" && [[ ! -e "$entry" ]] && rm "$entry"; done
 done
 
+for dest in "$codex_agents"/*.toml; do
+  toml="$root/codex/agents/$(basename "$dest")"
+  if [[ ! -f "$toml" ]] && ours_toml "$toml" "$dest"; then
+    rm "$dest"
+  fi
+done
+
 linked=0
 for skill in "$root"/skills/*/; do
   [[ -f "$skill/SKILL.md" ]] || continue
@@ -90,6 +101,7 @@ for agent in "$root"/agents/*.md; do
   link "$agent" "$claude_agents/$(basename "$agent")"
 done
 for toml in "$root"/codex/agents/*.toml; do
+  [[ -f "$toml" ]] || continue
   dest="$codex_agents/$(basename "$toml")"
   if [[ -e "$dest" ]] && ! ours_toml "$toml" "$dest"; then
     echo "skip $dest: already exists and isn't from this clone" >&2
@@ -98,8 +110,8 @@ for toml in "$root"/codex/agents/*.toml; do
   fi
   { echo "$stamp from $root"; cat "$toml"; } > "$dest"
 done
-python3 "$root/scripts/hooks.py" add "$claude_settings" "$mode_hook" || true
-python3 "$root/scripts/hooks.py" add "$codex_hooks" "$mode_hook" || true
+python3 "$root/scripts/hooks.py" add "$claude_settings" "$mode_hook" || [[ $? -eq 1 ]]
+python3 "$root/scripts/hooks.py" add "$codex_hooks" "$mode_hook" || [[ $? -eq 1 ]]
 
 if [[ ${#skipped[@]} -gt 0 ]]; then
   echo "WARNING: ${#skipped[@]} item(s) were skipped because you already have your own with the same name." >&2
