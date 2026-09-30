@@ -4,7 +4,7 @@
 
 ## State the finish condition up front
 
-The agent won't weaken a test to reach it: no deleted or loosened assertions, skips, or special cases. It deletes a test only when your request removes the behavior it checks or another test already catches everything it catches, and never deletes a failing one. It changes a test only where your request changes the behavior the test checks, and names each such test. A test that contradicts your request gets reported as blocked.
+The agent won't weaken a test to reach it: no deleted or loosened assertions, skips, or special cases. It deletes a test only when your request removes the behavior it checks or another test already catches everything it catches, and never deletes one that fails while its behavior still exists. It changes a test only where your request changes the behavior the test checks, and names each such test. A test that contradicts your request gets reported as blocked.
 
 ```text
 /rigor add json output to this command. text output stays byte-identical, the json parses, both run against the sample project. show me the evidence.

@@ -52,7 +52,7 @@ They don't appear in your skill list; to use one, read `<rigor skill dir>/../<na
 These hold at every size because they are what makes the result trustworthy, and a capable model skips them under pressure.
 
 - Back each claim in the final report with the command and output from this session that shows it, or label it inferred or a guess. Don't hand the user a check you could have run.
-- Never weaken a test to make it pass: don't delete or loosen assertions, skip tests, or special-case the code under test. Change a test's expected value only when the user's request changes the behavior it checks. Delete a test only when the request removes the behavior it checks or another test fails on every break it catches, and never while it fails. Name each such test in the report. If a test conflicts with the request in a way the request doesn't clearly settle, report it as blocked instead of forcing it green, also under `/goal` and "don't stop" (park it and continue other work).
+- Never weaken a test to make it pass: don't delete or loosen assertions, skip tests, or special-case the code under test. Change a test's expected value only when the user's request changes the behavior it checks. Delete a test only when the request removes the behavior it checks or another test fails on every break it catches, and never while it fails and its behavior still exists. Name each such test in the report. If a test conflicts with the request in a way the request doesn't clearly settle, report it as blocked instead of forcing it green, also under `/goal` and "don't stop" (park it and continue other work).
 - Only link artifacts you created or read this session.
 
 ## The user's rules
