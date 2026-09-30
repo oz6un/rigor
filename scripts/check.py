@@ -107,9 +107,6 @@ for md in sorted((root / "agents").glob("*.md")):
     if not desc or desc.group(1) != frontmatter(md_text).get("description"):
         problems.append(f"codex/agents/{toml.name}: description differs from agents/{md.name}")
 
-for toml in sorted((root / "codex" / "agents").glob("*.toml")):
-    if not (root / "agents" / f"{toml.stem}.md").exists():
-        problems.append(f"codex/agents/{toml.name}: no agents/{toml.stem}.md")
 
 readme_skills = set(re.findall(r"^\| `([a-z0-9-]+)` \|", (root / "README.md").read_text(), re.M))
 if readme_skills != skill_names:

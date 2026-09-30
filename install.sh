@@ -67,15 +67,10 @@ uninstall() {
 }
 
 case "$mode" in
-  --uninstall|install) ;;
+  --uninstall) uninstall; exit ;;  # removes what it can and reports a config it can't parse
+  install) ;;
   *) echo "usage: install.sh [--uninstall]" >&2; exit 2 ;;
 esac
-
-# Uninstall removes what it can and reports a config it can't parse.
-if [[ "$mode" == --uninstall ]]; then
-  uninstall
-  exit 0
-fi
 
 # Refuse to install on a config we can't parse, before changing anything.
 python3 "$root/scripts/hooks.py" check "$claude_settings" "$mode_hook"
