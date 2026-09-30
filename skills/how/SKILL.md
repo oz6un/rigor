@@ -22,7 +22,7 @@ When unsure, treat it as simple.
 Split the question into two to four exploration angles, each a distinct slice of the subsystem (for example: the entry point and request flow, the persistence layer, the integration with service Y). Spawn one read-only explorer per angle, all in parallel, each with `references/explorer-prompt.md` and its angle filled in.
 
 - In Claude Code, use the `Explore` agent, or `general-purpose` on a fast model.
-- In Codex, spawn subagents with `sandbox_mode = "read-only"` on a fast model.
+- In Codex, use the `rigor-reviewer` custom agent on a fast model (see the rigor skill's Subagents section).
 
 For a cross-model check, run one of the angles through `<this skill's dir>/../rigor/scripts/second-opinion.sh` instead of a host subagent.
 

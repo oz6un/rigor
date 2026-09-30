@@ -34,6 +34,8 @@ Launch all candidates at once and let them run in parallel. Each prompt includes
 
   Drop `--write --cd` for a candidate that only returns text (a written design, a plan); its final message is the artifact. If the script exits 3, the other CLI isn't installed: start a host candidate for that seat instead (not a dropout) and note it in the synthesis record.
 
+  Name the verification command in the candidate's prompt. With `--write`, the candidate runs commands in the CLI's sandbox: it can read your files, write in its worktree and a temp folder (for Codex, `/tmp` and `$TMPDIR`), and has no network, not even localhost. Install its dependencies first, pass grounding by its path (copies in the worktree would show up in its diff), and keep traces and judge inputs under your home folder. Exit 4 means the run didn't finish (no completion reported, or no answer); treat it as unfinished even if files were produced. Exit 0 confirms only that the run finished: read the answer, which says what the candidate couldn't run, and verify its work yourself.
+
 If a candidate produces nothing usable, continue with N-1 and record the dropout.
 
 Tell each candidate to leave its changes uncommitted, because the other CLI's sandbox may not be able to write the repo's `.git`.
@@ -53,13 +55,13 @@ When candidates write code, each needs its own git worktree:
 
   Pass that path in the subagent's prompt, or as `--cd` to `second-opinion.sh --write`. Read a candidate's full change with `git -C <worktree> add -A && git -C <worktree> diff --cached`.
 
-For text artifacts, use `/tmp/arena-<slug>/candidate-<n>/`. When the arena is done, remove the worktrees you created (`git worktree remove <path>`) and delete their branches unless a candidate's branch became the base.
+For text artifacts, use `~/.rigor/arena-<slug>/candidate-<n>/`. When the arena is done, remove the worktrees you created (`git worktree remove <path>`) and delete their branches unless a candidate's branch became the base.
 
 ## Phase C: Cross-judge
 
 After every candidate has finished, get one independent judge from a different model family than yours: run it through `<this skill's dir>/../rigor/scripts/second-opinion.sh` (read-only, the default). Give it the rubric and the candidates by path label. It scores each criterion per candidate and recommends a base with reasons. It runs while you do your own reading in Phase D. Don't start it while candidates are still writing.
 
-If the other CLI isn't installed, the judge is a read-only host subagent (Claude Code `Explore`; Codex `sandbox_mode = "read-only"`); note that it shares your model family.
+If the other CLI isn't installed, the judge is a read-only host subagent (Claude Code: a `general-purpose` agent told not to edit; Codex: `rigor-reviewer`; per the rigor skill's Subagents section); note that it shares your model family.
 
 ## Phase D: Pick a base
 

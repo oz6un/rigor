@@ -35,6 +35,12 @@ Skills that run review panels (`interrogate`, `arena`, `architect`, `reflect`, a
 
 To pick the model used for second opinions, set `RIGOR_CODEX_MODEL` or `RIGOR_CLAUDE_MODEL`.
 
+The runner is `skills/rigor/scripts/second-opinion.sh`; run it with `--help` for its options. It reads the prompt from stdin and prints the final answer. If inherited environment variables identify both hosts, pass the target explicitly with `--cli claude` or `--cli codex`.
+
+For a code-writing candidate, use `--write --cd <worktree>`. The candidate can then run commands without approval inside the CLI's sandbox (Codex's workspace sandbox, or Claude Code's, which the runner requires). It's a guardrail, not isolation: commands can read your files and write in the working directory and a temp folder (for Codex, `/tmp` and `$TMPDIR`), and they have no network, not even localhost. Install everything the candidate's tests need beforehand, and keep traces and judge inputs under your home folder. Claude runs load your own settings, not the checked-out repo's (its CLAUDE.md is passed in as text), with no hooks, MCP servers or memory writes. Exit 4 means the run didn't finish (no completion reported, or no answer). An exit of 0 confirms only that it finished, not that the candidate ran or passed its tests; its answer says what it couldn't run.
+
+For evaluations, add `--trace <artifact-dir>/run.jsonl` to capture tool events and the outcome. The artifact directory must exist. Use a new path for every run, outside the candidate's workspace; the runner refuses to overwrite an existing file and retains partial traces on failure. Native CLI session persistence stays disabled.
+
 ## Usage
 
 Start a task with `/rigor` (Codex: `$rigor`):
@@ -131,6 +137,7 @@ See [docs/guide](docs/guide/README.md) for a longer walkthrough.
 ## Subagents
 
 - `rigor-agent` works on a step of a rigor playbook. It reads `rigor` before starting.
+- `rigor-reviewer` (Codex only) investigates or reviews without editing the repository. Its TOML requests a read-only sandbox; the parent's runtime settings can override it. Claude Code investigates with its built-in `Explore` agent and reviews with a `general-purpose` agent told not to edit.
 - `comment-reviewer` is a read-only reviewer that flags unnecessary comments. `no-comments` runs it.
 
 ## Repository layout
@@ -148,6 +155,8 @@ docs/guide/            Walkthrough
 
 - `scripts/smoke.sh` runs every script the skills call (install, hooks, orch, watch-pr, log and audit helpers) in a throwaway directory, with no model calls. Run it before pushing.
 - `python3 scripts/test_mode_hook.py` runs the stay-on hook through a session's life (on, reminders, compaction, off).
+- `python3 scripts/test_install.py` checks hook registration and obsolete Codex-agent cleanup in isolated homes.
+- `python3 scripts/test_second_opinion.py` checks external CLI completion, routing, and trace capture with fake executables. Live CLI probes are separate from this offline suite.
 - `python3 scripts/check.py` checks skill frontmatter, links between skills, playbooks and principles, the principle index, the Claude Code and Codex agent files, and the README skills table all agree.
 - Because the installed skills are symlinks into your clone, edits show up in the next session with no reinstall step. Rerun `install.sh` after adding or removing a skill or agent.
 

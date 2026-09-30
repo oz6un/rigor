@@ -93,23 +93,30 @@ if rigor_chars > 8000:
     problems.append(f"skills/rigor/SKILL.md is {rigor_chars} chars; keep it under 8000 (~2k tokens)")
 
 for md in sorted((root / "agents").glob("*.md")):
-    toml = root / "codex" / "agents" / f"{md.stem}.toml"
-    if not toml.exists():
-        problems.append(f"agents/{md.name}: no codex/agents/{toml.name}")
-        continue
-    md_text, toml_text = md.read_text(), toml.read_text()
+    if not (root / "codex" / "agents" / f"{md.stem}.toml").exists():
+        problems.append(f"agents/{md.name}: no codex/agents/{md.stem}.toml")
+
+# Every Codex agent needs its own name and a description; one with a Claude twin must match it.
+# A Codex-only agent (no agents/<name>.md) is allowed.
+for toml in sorted((root / "codex" / "agents").glob("*.toml")):
+    toml_text = toml.read_text()
     body = re.search(r"developer_instructions = ('''|\"\"\")\n(.*?)\1", toml_text, re.S)
     desc = re.search(r'^description = "(.*)"$', toml_text, re.M)
-    if not re.search(rf'^name = "{md.stem}"$', toml_text, re.M) or frontmatter(md_text).get("name") != md.stem:
-        problems.append(f"agents/{md.stem}: name must equal the file name in both agents/ and codex/agents/")
-    if not body or body.group(2).strip() != md_text.split("---\n", 2)[2].strip():
+    if not re.search(rf'^name = "{toml.stem}"$', toml_text, re.M):
+        problems.append(f"codex/agents/{toml.name}: name must equal the file name")
+    if not desc or not body:
+        problems.append(f"codex/agents/{toml.name}: needs a description and developer_instructions")
+    md = root / "agents" / f"{toml.stem}.md"
+    if not md.exists():
+        continue
+    md_text = md.read_text()
+    if frontmatter(md_text).get("name") != md.stem:
+        problems.append(f"agents/{md.name}: name must equal the file name")
+    if body and body.group(2).strip() != md_text.split("---\n", 2)[2].strip():
         problems.append(f"codex/agents/{toml.name}: instructions differ from agents/{md.name}")
-    if not desc or desc.group(1) != frontmatter(md_text).get("description"):
+    if desc and desc.group(1) != frontmatter(md_text).get("description"):
         problems.append(f"codex/agents/{toml.name}: description differs from agents/{md.name}")
 
-for toml in sorted((root / "codex" / "agents").glob("*.toml")):
-    if not (root / "agents" / f"{toml.stem}.md").exists():
-        problems.append(f"codex/agents/{toml.name}: no agents/{toml.stem}.md")
 
 readme_skills = set(re.findall(r"^\| `([a-z0-9-]+)` \|", (root / "README.md").read_text(), re.M))
 if readme_skills != skill_names:

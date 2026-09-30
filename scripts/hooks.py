@@ -9,6 +9,7 @@ Exit status: 0 changed (or check passed), 1 nothing to change, 2 unreadable conf
 """
 import json
 import os
+import re
 import sys
 import tempfile
 
@@ -18,16 +19,30 @@ MARK = "skills/rigor/scripts/mode-hook.py"
 action, path, script = sys.argv[1:]
 
 
+def fail(message):
+    print(f"hooks.py: {path}: {message}; fix it, then rerun the install.sh command you ran", file=sys.stderr)
+    sys.exit(2)
+
+
 def load():
     if not os.path.exists(path):
         return {}
     try:
         with open(path) as f:
             data = json.load(f)
-    except ValueError as e:
-        sys.exit(f"hooks.py: {path} isn't valid JSON ({e}); fix it, then rerun install.sh")
+    except (ValueError, OSError) as e:
+        fail(str(e))
     if not isinstance(data, dict) or not isinstance(data.get("hooks", {}), dict):
-        sys.exit(f"hooks.py: {path} has an unexpected shape; fix it, then rerun install.sh")
+        fail("expected a JSON object with a hooks object")
+    for event in EVENTS:
+        groups = data.get("hooks", {}).get(event, [])
+        if not isinstance(groups, list):
+            fail(f"hooks.{event} must be a list")
+        for group in groups:
+            if not isinstance(group, dict) or not isinstance(group.get("hooks", []), list):
+                fail(f"hooks.{event} must contain objects with hook lists")
+            if any(not isinstance(hook, dict) for hook in group.get("hooks", [])):
+                fail(f"hooks.{event} handlers must be objects")
     return data
 
 
@@ -39,9 +54,17 @@ config = load()
 if action == "check":
     sys.exit(0)
 
+# Codex trusts a hook by its command and its position (event:group:handler), so an installed hook
+# that already runs this exact command is left where it is. The double-quoted form is the one
+# earlier installs wrote; escaping keeps shell-special characters in the path literal.
+command = 'python3 "' + re.sub(r'(["$`\\])', r'\\\1', script) + '" || true'
+
 before = json.dumps(config, sort_keys=True)
 hooks = config.setdefault("hooks", {})
 for event in EVENTS:
+    installed = [h.get("command") for g in hooks.get(event, []) for h in g.get("hooks", []) if ours(h)]
+    if action == "add" and installed == [command]:
+        continue
     groups = []
     for group in hooks.get(event, []):
         kept = [h for h in group.get("hooks", []) if not ours(h)]
@@ -50,7 +73,7 @@ for event in EVENTS:
         elif not group.get("hooks"):
             groups.append(group)
     if action == "add":
-        groups.append({"hooks": [{"type": "command", "command": f'python3 "{script}" || true'}]})
+        groups.append({"hooks": [{"type": "command", "command": command}]})
     if groups:
         hooks[event] = groups
     else:
@@ -60,12 +83,19 @@ if not hooks:
 
 if json.dumps(config, sort_keys=True) == before:
     sys.exit(1)
-target = os.path.realpath(path)
-os.makedirs(os.path.dirname(target), exist_ok=True)
-fd, tmp = tempfile.mkstemp(dir=os.path.dirname(target), prefix=".rigor-")
-with os.fdopen(fd, "w") as f:
-    json.dump(config, f, indent=2, ensure_ascii=False)
-    f.write("\n")
-if os.path.exists(target):
-    os.chmod(tmp, os.stat(target).st_mode & 0o777)
-os.replace(tmp, target)
+tmp = None
+try:
+    target = os.path.realpath(path)
+    os.makedirs(os.path.dirname(target), exist_ok=True)
+    fd, tmp = tempfile.mkstemp(dir=os.path.dirname(target), prefix=".rigor-")
+    with os.fdopen(fd, "w") as f:
+        json.dump(config, f, indent=2, ensure_ascii=False)
+        f.write("\n")
+    if os.path.exists(target):
+        os.chmod(tmp, os.stat(target).st_mode & 0o777)
+    os.replace(tmp, target)
+except OSError as e:
+    fail(str(e))
+finally:
+    if tmp is not None and os.path.exists(tmp):
+        os.unlink(tmp)
