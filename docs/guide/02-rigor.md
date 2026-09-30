@@ -59,7 +59,7 @@ The Worktree cleanup playbook classifies each worktree by merge state, uncommitt
 /rigor i'm stepping away. keep going until the migration check reports zero old callers. log your decisions.
 ```
 
-A long run you'll review later goes to the Autonomous run playbook, which keeps a `/show-me-your-work` decision log; `/figure-it-out` is for large work no playbook fits. A small change (a few lines, obvious approach) skips the design and delegation steps, but still gets a runtime check, and a review unless it touches no code or the tests fully cover it. [Run work while you're away](./07-overnight.md) has the details.
+A long run you'll review later goes to the Autonomous run playbook, which keeps a `/show-me-your-work` decision log; `/figure-it-out` is for large work no playbook fits. A small change (a few lines, obvious approach) skips the design and delegation steps, but still gets a runtime check, and a review. [Run work while you're away](./07-overnight.md) has the details.
 
 **Pitfall:** don't list skills in your prompt ("use /how, then /architect, then /arena"). The playbook already orders them, and a hand-written sequence usually drops or reorders steps. Name a skill only to override a specific choice.
 
