@@ -12,7 +12,6 @@ You own the design and the result.
 4. Implement it. Choose the data shape and its organizing structure before writing logic (the `model-the-domain` principle). Make surgical edits, and carry improvements to a shared helper over to every caller. Delegate only independent tracks, per "Subagents" in `SKILL.md`; use the `arena` skill only when the user asks for alternatives or the design is high-stakes and genuinely open.
 5. Verify on the matching surface: `control-ui` or `control-cli` for UI and CLI changes, otherwise the real entry point callers use (the API, library call, or job). An inconclusive result, or a pass on a different surface, is not a pass; flag it.
 6. Rebase into small, ordered commits, and stack follow-ups as separate commits or PRs. Build, verify, and commit each small unit before the next (the `sequence-verifiable-units` principle).
-7. If the design is contested, run `interrogate` before shipping.
-8. Run the Opening a PR playbook (`playbooks/opening-a-pr.md`).
+7. Run the Opening a PR playbook (`playbooks/opening-a-pr.md`).
 
 **Reply:** what you built, what you chose and why, the throughput checkpoint, and open decisions. Use tables for design alternatives.

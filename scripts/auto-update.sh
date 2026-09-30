@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Fast-forward this clone to origin/main and reinstall. mode-hook.py starts it detached on every
-# session start; it does the real work at most once a day, one run at a time, and never prompts.
-# It leaves alone a clone you're working in: not on main, uncommitted changes, or local commits.
+# session start; it does the real work at most once a day and never prompts. It leaves alone a clone
+# you're working in: not on main, uncommitted changes to tracked files, or local commits. Untracked
+# files don't count; the reinstall links any untracked skill, as running install.sh by hand would.
 # Off: touch ~/.rigor/no-auto-update. History: ~/.rigor/update.log
 set -u
 dir="$HOME/.rigor"
@@ -10,7 +11,7 @@ stamp="$dir/last-update-check"
 checked_today() { [[ -n "$(find "$stamp" -mmin -1440 2>/dev/null)" ]]; }
 checked_today && exit 0
 
-# One run at a time. A lock older than 10 minutes was left by a killed or stuck run.
+# A lock keeps runs apart; one older than 10 minutes is treated as abandoned, even if its run is alive.
 mkdir -p "$dir"
 lock="$dir/update.lock"
 [[ -n "$(find "$lock" -maxdepth 0 -mmin +10 2>/dev/null)" ]] && rmdir "$lock"
@@ -29,7 +30,7 @@ root="$(cd "$(dirname "$0")/.." && pwd -P)"
 cd "$root" || exit 0
 in_use() {
   [[ "$(git symbolic-ref --short -q HEAD)" == main ]] || finish "skipped: $root isn't on main"
-  [[ -z "$(git --no-optional-locks status --porcelain)" ]] || finish "skipped: $root has uncommitted changes"
+  [[ -z "$(git --no-optional-locks status --porcelain --untracked-files=no)" ]] || finish "skipped: $root has uncommitted changes"
 }
 in_use
 

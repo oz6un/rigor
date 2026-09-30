@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # End to end: the session-start hook launches the updater without waiting on it, and the updater
-# fast-forwards and reinstalls a clone that's behind, at most once a day and one run at a time,
+# fast-forwards and reinstalls a clone that's behind, at most once a day behind a lock,
 # while leaving clones in use alone. Local origin, clean environment, no network.
 set -uo pipefail
 # The test runs git itself: an inherited GIT_DIR would point those commands at your repo.
@@ -39,7 +39,7 @@ now() { perl -MTime::HiRes=time -e 'printf "%.3f", time'; }
 
 # The hook, through a real launch.
 v=$(release zz-new)
-s=$(now); out="$(hook startup)"; e=$(now)
+s=$(now); out="$(hook startup 2>&1)"; e=$(now)
 check "startup hook returns in under 0.3s and prints nothing ($(perl -e "printf '%.3f', $e-$s")s)" perl -e "exit(!($e-$s < 0.3 && q{$out} eq q{}))"
 check "  the detached updater fast-forwards the clone" wait_for head_is "$v"
 check "  install.sh reran: the new skill is linked" wait_for test -f "$home/.claude/skills/zz-new/SKILL.md"
@@ -103,5 +103,10 @@ touch "$home/.rigor/no-auto-update"; new_day; update
 check "~/.rigor/no-auto-update turns it off" bash -c "! git -C '$tmp/clone' merge-base --is-ancestor $v9 HEAD 2>/dev/null"
 rm "$home/.rigor/no-auto-update"; update
 check "  and removing it turns it back on" head_is "$v9"
+
+echo mine > "$tmp/clone/draft.txt"; v10=$(release); new_day; update
+check "an untracked file doesn't block the update" head_is "$v10"
+echo theirs > "$tmp/origin/draft.txt"; v11=$(release); new_day; update
+check "  but an update that would overwrite it is skipped, and the file kept" bash -c "$(declare -f logged); home='$home'; logged \"can't fast-forward\" && grep -qx mine '$tmp/clone/draft.txt' && ! git -C '$tmp/clone' merge-base --is-ancestor $v11 HEAD 2>/dev/null"
 
 exit $((failed > 0))

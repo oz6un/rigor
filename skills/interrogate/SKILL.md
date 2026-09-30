@@ -20,24 +20,24 @@ Write the diff to a file (for example `/tmp/interrogate-<slug>/diff.patch`) and 
 
 ## Step 2: State the intent
 
-Write one paragraph stating what the change is for, drawn from the user's message, commit messages, the PR description, and the code. If you're unsure of the intent, ask the user before continuing.
+Write one paragraph stating what the change is for, drawn from the user's message, commit messages, the PR description, and the code. If you're unsure of the intent, ask the user before continuing. If you're about to report the work to the user, write that report to a file and give reviewers its path, so they check its claims too.
 
 ## Step 3: Spawn the reviewers
 
-Build the prompt from [`references/reviewer-prompt.md`](references/reviewer-prompt.md), filling in the intent, the diff path and context files, [`references/rubric.md`](references/rubric.md), and [`references/code-quality-review.md`](references/code-quality-review.md). Every reviewer applies the code-quality lens.
+Build the prompt from [`references/reviewer-prompt.md`](references/reviewer-prompt.md), filling in the intent, the report path, the diff path and context files, [`references/rubric.md`](references/rubric.md), and [`references/code-quality-review.md`](references/code-quality-review.md). Every reviewer applies the code-quality lens.
 
 Default panel, all launched at once:
 
 | Reviewer | Runs on | Focus line |
 |---|---|---|
-| A | Host subagent, read-only, strongest model | Correctness, root causes, and security first |
-| B | Host subagent, read-only, strongest model | Structure, complexity, and the code-quality lens first |
+| A | Host subagent, doesn't edit the repo, strongest model | Correctness, root causes, and security first |
+| B | Host subagent, doesn't edit the repo, strongest model | Structure, complexity, and the code-quality lens first |
 | C | The other CLI via `second-opinion.sh` | None; the full prompt as written |
 
-- Host reviewers: Claude Code, the Agent tool with `subagent_type: "Explore"` or a `general-purpose` agent told not to edit; Codex, spawn with `sandbox_mode = "read-only"`. Two host reviewers on the same model agree more often than two different models would, which is why A and B each get a focus line. The focus sets what to examine first; each still covers the whole rubric.
+- Host reviewers: Claude Code, the Agent tool with `subagent_type: "Explore"` or a `general-purpose` agent told not to edit the repository (it may run code in a scratch copy); Codex, spawn with `sandbox_mode = "read-only"`. Two host reviewers on the same model agree more often than two different models would, which is why A and B each get a focus line. The focus sets what to examine first; each still covers the whole rubric.
 - Reviewer C: write the filled prompt to a file and run it read-only from the repository root, in the background alongside the host reviewers: `<this skill's dir>/../rigor/scripts/second-opinion.sh --cd "$(git rev-parse --show-toplevel)" < prompt.txt`. If the other CLI isn't installed, C is a third host reviewer with no focus line.
 
-The user can ask for more or fewer reviewers; extend or shrink the table, keeping one seat on the other CLI.
+The user can ask for more or fewer reviewers; extend or shrink the table, keeping the other-CLI seat unless the caller asks for fewer.
 
 ## Step 4: Synthesize
 

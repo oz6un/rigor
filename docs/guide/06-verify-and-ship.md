@@ -4,7 +4,7 @@
 
 ## State the finish condition up front
 
-The agent won't weaken a test to reach it: no deleted or loosened assertions, skips, or special cases. It deletes a test only when your request removes the behavior it checks or another test already catches everything it catches, and never deletes a failing one. It changes a test only where your request changes the behavior the test checks, and names each such test. A test that contradicts your request gets reported as blocked.
+The agent won't weaken a test to reach it: no deleted or loosened assertions, skips, or special cases. It deletes a test only when your request removes the behavior it checks or another test already catches everything it catches, and never deletes one that fails while its behavior still exists. It changes a test only where your request changes the behavior the test checks, and names each such test. A test that contradicts your request gets reported as blocked.
 
 ```text
 /rigor add json output to this command. text output stays byte-identical, the json parses, both run against the sample project. show me the evidence.
@@ -48,7 +48,7 @@ It writes `.agents/skills/verify-<app>/`, symlinked from `.claude/skills/` so bo
 /rigor open the pr. small ordered commits, evidence in the description.
 ```
 
-The Opening a PR playbook works from a worktree, arranges small ordered commits, cleans the diff and prose, and returns the link. Several narrow PRs are easier to review than one large one, and stacked follow-ups beat a growing branch.
+The Opening a PR playbook works from a worktree, arranges small ordered commits, cleans the diff and prose, and returns the link. Before it opens the PR or tells you the work is done, someone other than the agent reviews the change, scaled to what a mistake would cost (the Evidence rules in the [rigor skill](../../skills/rigor/SKILL.md)). Several narrow PRs are easier to review than one large one, and stacked follow-ups beat a growing branch.
 
 ## Babysit: get the PR to merge-ready
 

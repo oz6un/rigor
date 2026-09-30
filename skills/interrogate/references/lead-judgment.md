@@ -19,6 +19,8 @@ You have the full conversation. Use it.
 
 **Hypothetical versus actual.** "What if someone passes null?" is a finding only if a caller can pass null. Trace the call site. If upstream validation or the type system prevents it, dismiss it. Reviewers working from a diff can't always see the whole call chain; you can.
 
+**Suggestions that add code.** Reviewers lean toward adding guards and machinery. Before accepting one, ask how likely the failure it guards against is; if it isn't, put it under Noted. A suggestion to remove something deserves the opposite bias.
+
 **Premature abstraction.** Reviewers often suggest extracting functions or adding interfaces. Ask whether the code needs to vary in a second way. If not, the abstraction is premature, and simple inline code is better.
 
 **"I would have done it differently."** The most common false positive. A different preferred approach isn't a bug or a design flaw unless the reviewer shows a concrete problem with the current one. Dismiss these and say why.
