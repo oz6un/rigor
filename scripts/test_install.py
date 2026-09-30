@@ -97,7 +97,8 @@ class InstallTests(unittest.TestCase):
         config.parent.mkdir(parents=True)
         for groups in ([{"hooks": [rigor]}, {"hooks": [mine]}], [{"hooks": [rigor, mine]}]):
             with self.subTest(groups=groups):
-                original = json.dumps({"hooks": {"SessionStart": groups}}, indent=2) + "\n"
+                original = json.dumps({"hooks": {"UserPromptSubmit": [{"hooks": [rigor]}],
+                                                  "SessionStart": groups}}, indent=2) + "\n"
                 config.write_text(original)
                 result = subprocess.run(["python3", str(self.clone / "scripts/hooks.py"), "add", str(config), script],
                                         text=True, capture_output=True)

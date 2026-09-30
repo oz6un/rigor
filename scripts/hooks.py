@@ -9,7 +9,7 @@ Exit status: 0 changed (or check passed), 1 nothing to change, 2 unreadable conf
 """
 import json
 import os
-import shlex
+import re
 import sys
 import tempfile
 
@@ -20,7 +20,7 @@ action, path, script = sys.argv[1:]
 
 
 def fail(message):
-    print(f"hooks.py: {path}: {message}; fix it, then rerun install.sh", file=sys.stderr)
+    print(f"hooks.py: {path}: {message}; fix it, then rerun the install.sh command you ran", file=sys.stderr)
     sys.exit(2)
 
 
@@ -54,9 +54,17 @@ config = load()
 if action == "check":
     sys.exit(0)
 
+# Codex trusts a hook by its command and its position (event:group:handler), so an installed hook
+# that already runs this exact command is left where it is. The double-quoted form is the one
+# earlier installs wrote; escaping keeps shell-special characters in the path literal.
+command = 'python3 "' + re.sub(r'(["$`\\])', r'\\\1', script) + '" || true'
+
 before = json.dumps(config, sort_keys=True)
 hooks = config.setdefault("hooks", {})
 for event in EVENTS:
+    installed = [h.get("command") for g in hooks.get(event, []) for h in g.get("hooks", []) if ours(h)]
+    if action == "add" and installed == [command]:
+        continue
     groups = []
     for group in hooks.get(event, []):
         kept = [h for h in group.get("hooks", []) if not ours(h)]
@@ -65,10 +73,7 @@ for event in EVENTS:
         elif not group.get("hooks"):
             groups.append(group)
     if action == "add":
-        # Codex trusts a hook by a hash of its command: keep the established form so upgrades
-        # don't revoke that trust, and quote with shlex only paths that form can't carry.
-        quoted = shlex.quote(script) if set('"$`\\') & set(script) else f'"{script}"'
-        groups.append({"hooks": [{"type": "command", "command": f"python3 {quoted} || true"}]})
+        groups.append({"hooks": [{"type": "command", "command": command}]})
     if groups:
         hooks[event] = groups
     else:
