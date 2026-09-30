@@ -37,7 +37,7 @@ To pick the model used for second opinions, set `RIGOR_CODEX_MODEL` or `RIGOR_CL
 
 The runner is `skills/rigor/scripts/second-opinion.sh`; run it with `--help` for its options. It reads the prompt from stdin and prints the final answer. If inherited environment variables identify both hosts, pass the target explicitly with `--cli claude` or `--cli codex`.
 
-For a code-writing candidate, use `--write --cd <worktree>`. Claude may still need permission for verification commands: pass a narrow rule such as `--claude-allow-tool 'Bash(npm test *)'`. Repeat the option for additional commands. It requires `--write` and is ignored for Codex, which uses its own sandbox policy. Exit 4 means an incomplete run: Claude denied a tool, the CLI didn't report completion, or it returned no answer. Codex's denials aren't detected. An exit of 0 confirms CLI completion, not passing tests.
+For a code-writing candidate, use `--write --cd <worktree>`. Claude may still need permission for verification commands: pass a narrow rule such as `--claude-allow-tool 'Bash(npm test *)'`. Repeat the option for additional commands. It requires `--write` and is ignored for Codex, which uses its own sandbox policy. Exit 4 means the run didn't finish (no completion reported, or no answer). An exit of 0 confirms only that it finished, not that the candidate ran or passed its tests; its answer says what it couldn't run.
 
 For evaluations, add `--trace <artifact-dir>/run.jsonl` to capture tool events and the outcome. The artifact directory must exist. Use a new path for every run, outside the candidate's workspace; the runner refuses to overwrite an existing file and retains partial traces on failure. Native CLI session persistence stays disabled.
 
@@ -156,7 +156,7 @@ docs/guide/            Walkthrough
 - `scripts/smoke.sh` runs every script the skills call (install, hooks, orch, watch-pr, log and audit helpers) in a throwaway directory, with no model calls. Run it before pushing.
 - `python3 scripts/test_mode_hook.py` runs the stay-on hook through a session's life (on, reminders, compaction, off).
 - `python3 scripts/test_install.py` checks hook registration and obsolete Codex-agent cleanup in isolated homes.
-- `python3 scripts/test_second_opinion.py` checks external CLI completion, permission denials, routing, and trace capture with fake executables. Live CLI probes are separate from this offline suite.
+- `python3 scripts/test_second_opinion.py` checks external CLI completion, routing, and trace capture with fake executables. Live CLI probes are separate from this offline suite.
 - `python3 scripts/check.py` checks skill frontmatter, links between skills, playbooks and principles, the principle index, the Claude Code and Codex agent files, and the README skills table all agree.
 - Because the installed skills are symlinks into your clone, edits show up in the next session with no reinstall step. Rerun `install.sh` after adding or removing a skill or agent.
 

@@ -34,7 +34,7 @@ Launch all candidates at once and let them run in parallel. Each prompt includes
 
   Drop `--write --cd` for a candidate that only returns text (a written design, a plan); its final message is the artifact. If the script exits 3, the other CLI isn't installed: start a host candidate for that seat instead (not a dropout) and note it in the synthesis record.
 
-  Name the verification command in the candidate's prompt. For Claude, `--write` permits edits but shell commands may still need authorization. Pass only the required permission rules, for example `--claude-allow-tool 'Bash(npm test *)'`; this option requires `--write` and is ignored for Codex. Exit 4 means an incomplete run (Claude denied a tool, no completion was reported, or no answer came back); Codex's denials aren't detected. Inspect the failure and treat required verification as unfinished, even if files were produced. Exit 0 confirms CLI completion, not that the candidate's tests passed.
+  Name the verification command in the candidate's prompt. For Claude, `--write` permits edits but shell commands may still need authorization. Pass only the required permission rules, for example `--claude-allow-tool 'Bash(npm test *)'`; this option requires `--write` and is ignored for Codex. Exit 4 means the run didn't finish (no completion reported, or no answer); treat it as unfinished even if files were produced. Exit 0 confirms only that the run finished: read the answer, which says what the candidate couldn't run, and verify its work yourself.
 
 If a candidate produces nothing usable, continue with N-1 and record the dropout.
 

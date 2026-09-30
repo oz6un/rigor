@@ -81,12 +81,11 @@ class SecondOpinionTests(unittest.TestCase):
                 if cli == "claude":
                     self.assertEqual(Path(recorded["cwd"]).resolve(), self.base.resolve())
 
-    def test_denied_verification_is_not_success(self):
+    def test_a_denied_tool_still_returns_the_answer(self):
+        # The answer says what the CLI couldn't run; the caller reads it and verifies the work.
         result = self.run_cli("--write", RESPONSE="denied")
-        self.assertEqual(result.returncode, 4, result.stdout)
-        self.assertIn("Bash", result.stderr)
-        self.assertIn("review complete", result.stderr)
-        self.assertEqual(result.stdout, "")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout, "review complete\n")
 
     def test_recovered_codex_error_does_not_override_completion(self):
         result = self.run_cli("--cli", "codex", RESPONSE="recovered")
@@ -120,8 +119,8 @@ class SecondOpinionTests(unittest.TestCase):
                     self.assertEqual(result.stdout, "")
                     self.assertIn("second-opinion:", result.stderr)
 
-    def test_trace_keeps_tool_events_and_denied_result(self):
-        for cli, response, status in (("claude", "success", 0), ("claude", "denied", 4), ("codex", "success", 0)):
+    def test_trace_keeps_tool_events(self):
+        for cli, response, status in (("claude", "success", 0), ("claude", "denied", 0), ("codex", "success", 0)):
             with self.subTest(cli=cli, response=response):
                 trace = self.base / f"{cli}-{response}.jsonl"
                 result = self.run_cli("--cli", cli, "--trace", str(trace), RESPONSE=response)

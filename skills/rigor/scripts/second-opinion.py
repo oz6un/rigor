@@ -13,7 +13,7 @@ def parse_args():
     parser = argparse.ArgumentParser(
         prog="second-opinion",
         description="Run a stdin prompt through the other CLI; print its final answer.",
-        epilog="Exit codes: 0 completed, 1 CLI/output failure, 2 usage, 3 missing CLI, 4 incomplete run (a Claude tool denial, no completion event, or an empty answer; Codex denials are not detected).")
+        epilog="Exit codes: 0 completed, 1 CLI/output failure, 2 usage, 3 missing CLI, 4 incomplete run (no completion reported, or no answer).")
     parser.add_argument("--cli", choices=("codex", "claude"), help="explicit target CLI")
     parser.add_argument("--write", action="store_true", help="allow edits; use a separate worktree")
     parser.add_argument("--cd", type=Path, default=Path.cwd(), help="working directory")
@@ -68,16 +68,6 @@ def completion(cli, trace, answer):
     else:
         if result is None:
             return 4, "Claude did not report completion"
-        denials = result.get("permission_denials", [])
-        if not isinstance(denials, list):
-            raise ValueError("invalid Claude permission_denials")
-        if denials:
-            names = sorted({str(denial.get("tool_name", "unknown")) for denial in denials if isinstance(denial, dict)})
-            message = f"Claude denied tools ({', '.join(names)}); required work may be incomplete"
-            partial = result.get("result")
-            if isinstance(partial, str) and partial.strip():
-                message += f"\nPartial answer: {partial}"
-            return 4, message
         if result.get("is_error") is not False or result.get("subtype") != "success":
             errors = result.get("errors") or result.get("result") or ""
             detail = "; ".join(map(str, errors)) if isinstance(errors, list) else str(errors)
