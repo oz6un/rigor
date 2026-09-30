@@ -15,6 +15,8 @@ git clone https://github.com/oz6un/rigor.git ~/.local/share/rigor
 ~/.local/share/rigor/install.sh
 ```
 
+Already installed? Use the update command below instead.
+
 `install.sh` symlinks every skill into `~/.claude/skills/` (Claude Code) and `~/.agents/skills/` (Codex), symlinks the subagents into `~/.claude/agents/`, and copies the Codex agents into `~/.codex/agents/`. It also registers rigor's stay-on hook in `~/.claude/settings.json` and `~/.codex/hooks.json`, next to any hooks you already have. It never overwrites a skill or agent it didn't create; it skips it and says so.
 
 Codex runs a hook only after you approve it: open Codex, run `/hooks`, and trust rigor's two hooks (again whenever an update changes them). Claude Code needs no extra step. Start a new session afterwards.
