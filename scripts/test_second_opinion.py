@@ -32,6 +32,10 @@ if mode == "stdout_failure":
     events[-1] = ({"type": "turn.failed", "error": {"message": "provider stdout failure"}} if cli == "codex"
                   else {"type": "result", "subtype": "error_during_execution", "is_error": True, "errors": ["provider stdout failure"]})
 if mode == "missing": events.pop()
+if mode == "malformed_failure":
+    print("Error: not logged in")
+    print("auth token expired", file=sys.stderr)
+    sys.exit(9)
 if mode == "malformed":
     print("not json")
 else:
@@ -95,6 +99,16 @@ class SecondOpinionTests(unittest.TestCase):
                 result = self.run_cli("--cli", cli, RESPONSE="stdout_failure")
                 self.assertNotEqual(result.returncode, 0)
                 self.assertIn("provider stdout failure", result.stderr)
+                self.assertEqual(result.stdout, "")
+
+    def test_malformed_failed_output_preserves_exit_and_both_diagnostics(self):
+        for cli in ("claude", "codex"):
+            with self.subTest(cli=cli):
+                result = self.run_cli("--cli", cli, RESPONSE="malformed_failure")
+                self.assertEqual(result.returncode, 1)
+                self.assertIn("exited 9", result.stderr)
+                self.assertIn("auth token expired", result.stderr)
+                self.assertIn("not logged in", result.stderr)
                 self.assertEqual(result.stdout, "")
 
     def test_invalid_or_failed_completion_is_not_success(self):
