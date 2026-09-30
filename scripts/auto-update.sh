@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Fast-forward this clone to origin/main and reinstall. mode-hook.py starts it detached on every
-# session start; it does the real work at most once a day, one run at a time, and never prompts.
+# session start; it does the real work at most once a day and never prompts. A lock keeps runs apart,
+# except right after a killed run, when two can briefly overlap; the next session start repairs that.
 # It leaves alone a clone you're working in: not on main, uncommitted changes, or local commits.
 # Off: touch ~/.rigor/no-auto-update. History: ~/.rigor/update.log
 set -u
@@ -29,7 +30,7 @@ root="$(cd "$(dirname "$0")/.." && pwd -P)"
 cd "$root" || exit 0
 in_use() {
   [[ "$(git symbolic-ref --short -q HEAD)" == main ]] || finish "skipped: $root isn't on main"
-  [[ -z "$(git --no-optional-locks status --porcelain)" ]] || finish "skipped: $root has uncommitted changes"
+  [[ -z "$(git --no-optional-locks status --porcelain --untracked-files=no)" ]] || finish "skipped: $root has uncommitted changes"
 }
 in_use
 

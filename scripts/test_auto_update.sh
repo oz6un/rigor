@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # End to end: the session-start hook launches the updater without waiting on it, and the updater
-# fast-forwards and reinstalls a clone that's behind, at most once a day and one run at a time,
+# fast-forwards and reinstalls a clone that's behind, at most once a day behind a lock,
 # while leaving clones in use alone. Local origin, clean environment, no network.
 set -uo pipefail
 # The test runs git itself: an inherited GIT_DIR would point those commands at your repo.
@@ -39,7 +39,7 @@ now() { perl -MTime::HiRes=time -e 'printf "%.3f", time'; }
 
 # The hook, through a real launch.
 v=$(release zz-new)
-s=$(now); out="$(hook startup)"; e=$(now)
+s=$(now); out="$(hook startup 2>&1)"; e=$(now)
 check "startup hook returns in under 0.3s and prints nothing ($(perl -e "printf '%.3f', $e-$s")s)" perl -e "exit(!($e-$s < 0.3 && q{$out} eq q{}))"
 check "  the detached updater fast-forwards the clone" wait_for head_is "$v"
 check "  install.sh reran: the new skill is linked" wait_for test -f "$home/.claude/skills/zz-new/SKILL.md"
@@ -83,7 +83,10 @@ proj_head="$(git -C "$tmp/proj" rev-parse HEAD)"
 v7=$(release); new_day; update env GIT_DIR="$tmp/proj/.git" GIT_WORK_TREE="$tmp/proj"
 check "an inherited GIT_DIR doesn't redirect it to another repo" bash -c "[ \"\$(git -C '$tmp/proj' rev-parse HEAD)\" = '$proj_head' ] && [ \"\$(git -C '$tmp/clone' rev-parse HEAD)\" = '$v7' ]"
 
-v8=$(release); new_day; echo local > "$tmp/clone/README.md"; update
+v8=$(release); new_day; echo notes > "$tmp/clone/notes.txt"; update
+check "an untracked file doesn't block the update" head_is "$v8"
+rm "$tmp/clone/notes.txt"; g -C "$tmp/clone" reset -q --hard "$v7"
+new_day; echo local > "$tmp/clone/README.md"; update
 check "uncommitted changes: skipped, clone untouched" bash -c "$(declare -f head_is logged); tmp='$tmp'; home='$home'; head_is $v7 && logged 'uncommitted'"
 git -C "$tmp/clone" checkout -q README.md && git -C "$tmp/clone" checkout -q -b feature; new_day; update
 check "not on main: skipped" bash -c "$(declare -f logged); home='$home'; logged \"isn't on main\""
