@@ -107,6 +107,6 @@ check "  and removing it turns it back on" head_is "$v9"
 echo mine > "$tmp/clone/draft.txt"; v10=$(release); new_day; update
 check "an untracked file doesn't block the update" head_is "$v10"
 echo theirs > "$tmp/origin/draft.txt"; v11=$(release); new_day; update
-check "  but an update that would overwrite it is skipped, and the file kept" bash -c "grep -qx mine '$tmp/clone/draft.txt' && ! git -C '$tmp/clone' merge-base --is-ancestor $v11 HEAD 2>/dev/null"
+check "  but an update that would overwrite it is skipped, and the file kept" bash -c "$(declare -f logged); home='$home'; logged \"can't fast-forward\" && grep -qx mine '$tmp/clone/draft.txt' && ! git -C '$tmp/clone' merge-base --is-ancestor $v11 HEAD 2>/dev/null"
 
 exit $((failed > 0))

@@ -41,7 +41,7 @@ For each finding, give:
 1. **Severity:** `critical` (bugs, data loss, security issues, broken behavior), `warning` (a design, maintainability, or correctness problem that isn't broken yet but will cause trouble), or `nit` (style, naming, minor improvement).
 2. **Finding:** the problem in concrete terms, with file and line or function.
 3. **Evidence:** `reproduced` if you ran something that shows it (a repro, a failing case, a deliberate break that no test catches), or `reasoned` if it comes from reading the code (show the reasoning, such as the call chain that produces a null). For a reasoned finding, say what would confirm it. Don't drop a finding for lack of a repro.
-4. **Suggestion** (optional): a concrete alternative. Prefer removing or simplifying; suggest adding code only for a failure you reproduced.
+4. **Suggestion** (optional): a concrete alternative. Prefer removing or simplifying.
 
 A good finding points at specific code, explains why it's a problem, distinguishes "this is broken" from "I would have done it differently", and takes the stated intent into account.
 

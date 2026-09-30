@@ -17,11 +17,9 @@ You have the full conversation. Use it.
 
 **Filler findings.** Reviewers tend to fill the space. With no critical issues to report, they inflate nits. If a reviewer's findings are all nits and style preferences, the code is probably fine; say so.
 
-**Hypothetical versus actual.** A reproduced finding is real; the rules below decide what to do about it. A reasoned one needs confirming: "What if someone passes null?" is a finding only if a caller can pass null. Trace the call site, and if upstream validation or the type system prevents it, dismiss it. If you can't confirm it, put it under Consider. Reviewers working from a diff can't always see the whole call chain; you can.
+**Hypothetical versus actual.** "What if someone passes null?" is a finding only if a caller can pass null. Trace the call site. If upstream validation or the type system prevents it, dismiss it. Reviewers working from a diff can't always see the whole call chain; you can. A reproduced finding is real; a reasoned one you can't reproduce goes under Consider.
 
 **Suggestions that add code.** Reviewers lean toward adding guards and machinery. Before accepting one, ask how likely the failure it guards against is; if it isn't, put it under Noted. A suggestion to remove something deserves the opposite bias.
-
-**Conflicts with the request.** A finding that argues with what the user asked for goes to the user, not into Act on or Dismissed.
 
 **Premature abstraction.** Reviewers often suggest extracting functions or adding interfaces. Ask whether the code needs to vary in a second way. If not, the abstraction is premature, and simple inline code is better.
 
