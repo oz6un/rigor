@@ -88,6 +88,22 @@ class InstallTests(unittest.TestCase):
         self.assertEqual(result.returncode, 1, result.stderr)
         self.assertEqual(config.read_text(), original)
 
+    def test_upgrade_leaves_a_user_hook_after_rigors_in_place(self):
+        # Codex also keys trust by position (event:group:handler), so moving rigor's group breaks it.
+        script = "/Users/example/.local/share/rigor/skills/rigor/scripts/mode-hook.py"
+        rigor = {"type": "command", "command": f'python3 "{script}" || true'}
+        mine = {"type": "command", "command": "echo mine"}
+        config = self.home / ".codex/hooks.json"
+        config.parent.mkdir(parents=True)
+        for groups in ([{"hooks": [rigor]}, {"hooks": [mine]}], [{"hooks": [rigor, mine]}]):
+            with self.subTest(groups=groups):
+                original = json.dumps({"hooks": {"SessionStart": groups}}, indent=2) + "\n"
+                config.write_text(original)
+                result = subprocess.run(["python3", str(self.clone / "scripts/hooks.py"), "add", str(config), script],
+                                        text=True, capture_output=True)
+                self.assertEqual(result.returncode, 1, result.stderr)
+                self.assertEqual(config.read_text(), original)
+
     def check_removed_agent(self, *args):
         result = self.install()
         self.assertEqual(result.returncode, 0, result.stderr)
