@@ -34,7 +34,7 @@ Launch all candidates at once and let them run in parallel. Each prompt includes
 
   Drop `--write --cd` for a candidate that only returns text (a written design, a plan); its final message is the artifact. If the script exits 3, the other CLI isn't installed: start a host candidate for that seat instead (not a dropout) and note it in the synthesis record.
 
-  Name the verification command in the candidate's prompt. With `--write`, the candidate runs commands in a sandbox (writes only in its worktree, no network), so install its dependencies first. Exit 4 means the run didn't finish (no completion reported, or no answer); treat it as unfinished even if files were produced. Exit 0 confirms only that the run finished: read the answer, which says what the candidate couldn't run, and verify its work yourself.
+  Name the verification command in the candidate's prompt. With `--write`, the candidate runs commands in a sandbox: it writes in its worktree and the CLI's temp folder (for Claude, `/tmp/claude-<uid>`), and has no network except localhost. Install its dependencies first, and keep the other candidates' worktrees and your output files outside that temp folder. Exit 4 means the run didn't finish (no completion reported, or no answer); treat it as unfinished even if files were produced. Exit 0 confirms only that the run finished: read the answer, which says what the candidate couldn't run, and verify its work yourself.
 
 If a candidate produces nothing usable, continue with N-1 and record the dropout.
 
@@ -61,7 +61,7 @@ For text artifacts, use `/tmp/arena-<slug>/candidate-<n>/`. When the arena is do
 
 After every candidate has finished, get one independent judge from a different model family than yours: run it through `<this skill's dir>/../rigor/scripts/second-opinion.sh` (read-only, the default). Give it the rubric and the candidates by path label. It scores each criterion per candidate and recommends a base with reasons. It runs while you do your own reading in Phase D. Don't start it while candidates are still writing.
 
-If the other CLI isn't installed, the judge is a read-only host subagent (Claude Code `Explore`; Codex `rigor-reviewer`, per the rigor skill's Subagents section); note that it shares your model family.
+If the other CLI isn't installed, the judge is a read-only host subagent (Claude Code: a `general-purpose` agent told not to edit; Codex: `rigor-reviewer`; per the rigor skill's Subagents section); note that it shares your model family.
 
 ## Phase D: Pick a base
 

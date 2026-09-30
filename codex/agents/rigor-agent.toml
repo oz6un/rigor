@@ -1,5 +1,5 @@
 name = "rigor-agent"
-description = "Subagent for work inside a rigor playbook step (code-writing delegates, investigations, helpers). Reads the rigor skill before starting. Use instead of a general-purpose agent whenever the parent is running rigor. Continue an active rigor-agent on the same scope instead of spawning a sibling, but start a fresh one if it was interrupted."
+description = "Subagent for delegated work inside a rigor playbook step (code-writing delegates and helpers). Reads the rigor skill before starting. Reviewers and investigators use the read-only agents named in rigor's Subagents section instead. Continue an active rigor-agent on the same scope instead of spawning a sibling, but start a fresh one if it was interrupted."
 developer_instructions = """
 You are a subagent working under the `rigor` skill.
 

@@ -15,7 +15,7 @@ def parse_args():
         description="Run a stdin prompt through the other CLI; print its final answer.",
         epilog="Exit codes: 0 completed, 1 CLI/output failure, 2 usage, 3 missing CLI, 4 incomplete run (no completion reported, or no answer).")
     parser.add_argument("--cli", choices=("codex", "claude"), help="explicit target CLI")
-    parser.add_argument("--write", action="store_true", help="allow edits; use a separate worktree")
+    parser.add_argument("--write", action="store_true", help="allow edits and sandboxed commands; use a separate worktree")
     parser.add_argument("--cd", type=Path, default=Path.cwd(), help="working directory")
     parser.add_argument("--trace", type=Path, help="create a private JSONL event trace; never overwrite")
     args = parser.parse_args()
@@ -95,12 +95,15 @@ def run(args):
             if model:
                 command += ["--model", model]
             if args.write:
-                # Like Codex's workspace-write: commands run without approval, but only inside
-                # Claude's sandbox (writes limited to the working dir, no network); if the sandbox
-                # can't start, the run fails instead of falling back to unsandboxed commands.
-                command += ["--settings", json.dumps({"sandbox": {
-                    "enabled": True, "autoAllowBashIfSandboxed": True,
-                    "failIfUnavailable": True, "allowUnsandboxedCommands": False}})]
+                # Like Codex's workspace-write: commands run without approval, but only in Claude's
+                # sandbox, and the run fails if the sandbox can't start. --restricted drops the
+                # user's and project's settings, hooks and MCP servers, which run unsandboxed or
+                # could widen it. Commands can still read files and write in Claude's temp root.
+                command += ["--restricted", "--strict-mcp-config", "--tools", "Bash,Read,Edit,Write,Glob,Grep",
+                            "--settings", json.dumps({"sandbox": {
+                                "enabled": True, "autoAllowBashIfSandboxed": True,
+                                "failIfUnavailable": True, "allowUnsandboxedCommands": False,
+                                "network": {"allowLocalBinding": True}}})]
         fd = os.open(trace, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
         with os.fdopen(fd, "w") as events, log.open("w") as errors:
             child = subprocess.run(command, input=prompt, text=True, cwd=args.cd,
