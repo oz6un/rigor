@@ -18,8 +18,6 @@ def parse_args():
     parser.add_argument("--write", action="store_true", help="allow edits; use a separate worktree")
     parser.add_argument("--cd", type=Path, default=Path.cwd(), help="working directory")
     parser.add_argument("--trace", type=Path, help="create a private JSONL event trace; never overwrite")
-    parser.add_argument("--claude-allow-tool", action="append", default=[], metavar="RULE",
-                        help="Claude permission rule, repeatable; requires --write; ignored for Codex")
     args = parser.parse_args()
     if args.cli is None:
         claude = bool(os.environ.get("CLAUDECODE"))
@@ -27,10 +25,6 @@ def parse_args():
         if claude == codex:
             parser.error("ambiguous or unknown host; pass --cli codex or --cli claude")
         args.cli = "codex" if claude else "claude"
-    if args.claude_allow_tool and not args.write:
-        parser.error("--claude-allow-tool requires --write")
-    if any(not rule.strip() for rule in args.claude_allow_tool):
-        parser.error("--claude-allow-tool requires a nonempty rule")
     if not args.cd.is_dir():
         parser.error(f"working directory does not exist: {args.cd}")
     if sys.stdin.isatty():
@@ -100,8 +94,13 @@ def run(args):
             model = os.environ.get("RIGOR_CLAUDE_MODEL")
             if model:
                 command += ["--model", model]
-            if args.claude_allow_tool:
-                command += ["--allowedTools", *args.claude_allow_tool]
+            if args.write:
+                # Like Codex's workspace-write: commands run without approval, but only inside
+                # Claude's sandbox (writes limited to the working dir, no network); if the sandbox
+                # can't start, the run fails instead of falling back to unsandboxed commands.
+                command += ["--settings", json.dumps({"sandbox": {
+                    "enabled": True, "autoAllowBashIfSandboxed": True,
+                    "failIfUnavailable": True, "allowUnsandboxedCommands": False}})]
         fd = os.open(trace, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
         with os.fdopen(fd, "w") as events, log.open("w") as errors:
             child = subprocess.run(command, input=prompt, text=True, cwd=args.cd,

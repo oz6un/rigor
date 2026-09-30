@@ -156,19 +156,18 @@ class SecondOpinionTests(unittest.TestCase):
         self.assertEqual(result.returncode, 2)
         self.assertIn("--cli", result.stderr)
 
-    def test_claude_tool_allowances_require_write_and_preserve_rules(self):
-        rule = "Bash(python3 check.py *)"
-        result = self.run_cli("--claude-allow-tool", rule)
-        self.assertEqual(result.returncode, 2)
-        self.assertFalse(self.record.exists())
-        result = self.run_cli("--write", "--claude-allow-tool", rule,
-                              "--claude-allow-tool", "Bash(npm test *)")
+    def test_claude_write_runs_commands_only_inside_a_required_sandbox(self):
+        # A candidate can run its tests, but only sandboxed: no fallback when the sandbox can't
+        # start, and no unsandboxed retries.
+        result = self.run_cli("--write")
         self.assertEqual(result.returncode, 0, result.stderr)
         args = json.loads(self.record.read_text())["args"]
-        self.assertIn(rule, args)
-        self.assertIn("Bash(npm test *)", args)
         self.assertIn("acceptEdits", args)
         self.assertNotIn("bypassPermissions", args)
+        self.assertNotIn("--dangerously-skip-permissions", args)
+        sandbox = json.loads(args[args.index("--settings") + 1])["sandbox"]
+        self.assertEqual(sandbox, {"enabled": True, "autoAllowBashIfSandboxed": True,
+                                   "failIfUnavailable": True, "allowUnsandboxedCommands": False})
 
     def test_missing_cli_retains_fallback_status(self):
         (self.bin / "claude").unlink()
@@ -177,7 +176,7 @@ class SecondOpinionTests(unittest.TestCase):
         self.assertIn("host subagent", result.stderr)
 
     def test_missing_option_values_are_usage_errors(self):
-        for option in ("--cli", "--cd", "--trace", "--claude-allow-tool"):
+        for option in ("--cli", "--cd", "--trace"):
             with self.subTest(option=option):
                 self.assertEqual(self.run_cli(option).returncode, 2)
 
