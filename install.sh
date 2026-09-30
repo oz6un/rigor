@@ -55,14 +55,15 @@ uninstall() {
     toml="$root/codex/agents/$(basename "$dest")"
     if ours_toml "$toml" "$dest"; then rm "$dest" && echo "removed $dest"; fi
   done
+  local status=0
   for config in "$claude_settings" "$codex_hooks"; do
     if python3 "$root/scripts/hooks.py" remove "$config" "$mode_hook"; then
       echo "removed rigor's hook from $config"
     else
-      [[ $? -eq 1 ]] || return 1
+      [[ $? -eq 1 ]] || status=1
     fi
   done
-  return 0
+  return $status
 }
 
 case "$mode" in
@@ -70,14 +71,15 @@ case "$mode" in
   *) echo "usage: install.sh [--uninstall]" >&2; exit 2 ;;
 esac
 
-# Refuse to start on a config we can't parse, before changing anything.
-python3 "$root/scripts/hooks.py" check "$claude_settings" "$mode_hook"
-python3 "$root/scripts/hooks.py" check "$codex_hooks" "$mode_hook"
-
+# Uninstall removes what it can and reports a config it can't parse.
 if [[ "$mode" == --uninstall ]]; then
   uninstall
   exit 0
 fi
+
+# Refuse to install on a config we can't parse, before changing anything.
+python3 "$root/scripts/hooks.py" check "$claude_settings" "$mode_hook"
+python3 "$root/scripts/hooks.py" check "$codex_hooks" "$mode_hook"
 
 mkdir -p "$claude_skills" "$codex_skills" "$claude_agents" "$codex_agents"
 

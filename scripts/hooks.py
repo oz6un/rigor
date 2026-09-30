@@ -65,7 +65,10 @@ for event in EVENTS:
         elif not group.get("hooks"):
             groups.append(group)
     if action == "add":
-        groups.append({"hooks": [{"type": "command", "command": f"python3 {shlex.quote(script)} || true"}]})
+        # Codex trusts a hook by a hash of its command: keep the established form so upgrades
+        # don't revoke that trust, and quote with shlex only paths that form can't carry.
+        quoted = shlex.quote(script) if set('"$`\\') & set(script) else f'"{script}"'
+        groups.append({"hooks": [{"type": "command", "command": f"python3 {quoted} || true"}]})
     if groups:
         hooks[event] = groups
     else:
