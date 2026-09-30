@@ -15,7 +15,9 @@ args = sys.argv[1:]
 cli = pathlib.Path(sys.argv[0]).name
 pathlib.Path(os.environ["RECORD"]).write_text(json.dumps({
     "cli": cli, "args": args, "cwd": os.getcwd(), "prompt": sys.stdin.read(),
-    "nested": os.environ.get("RIGOR_NESTED"), "tmpdir": os.environ.get("CLAUDE_CODE_TMPDIR")}))
+    "nested": os.environ.get("RIGOR_NESTED"), "tmpdir": os.environ.get("CLAUDE_CODE_TMPDIR"),
+    "appended": (pathlib.Path(args[args.index("--append-system-prompt-file") + 1]).read_text()
+                 if "--append-system-prompt-file" in args else None)}))
 mode = os.environ.get("RESPONSE", "success")
 if cli == "codex":
     pathlib.Path(args[args.index("-o") + 1]).write_text("review complete")
@@ -91,8 +93,7 @@ class SecondOpinionTests(unittest.TestCase):
                     self.assertEqual(settings, {"disableAllHooks": True, "autoMemoryEnabled": False})
                     self.assertIsNone(recorded["tmpdir"])
                     # The repo's CLAUDE.md, which --setting-sources user drops, comes back as text.
-                    self.assertEqual(args[args.index("--append-system-prompt-file") + 1],
-                                     str(self.base / "CLAUDE.md"))
+                    self.assertEqual(recorded["appended"], "Run tests with make check.\n")
                     self.assertEqual(Path(recorded["cwd"]).resolve(), self.base.resolve())
 
     def test_a_denied_tool_still_returns_the_answer(self):
@@ -170,6 +171,19 @@ class SecondOpinionTests(unittest.TestCase):
         self.assertEqual(result.returncode, 2)
         self.assertIn("--cli", result.stderr)
 
+    def test_project_instructions_reach_claude_from_a_relative_cd_and_both_locations(self):
+        repo = self.base / "repo"
+        (repo / ".claude").mkdir(parents=True)
+        (repo / "CLAUDE.md").write_text("root rule\n")
+        (repo / ".claude/CLAUDE.md").write_text("dot-claude rule\n")
+        result = subprocess.run([str(SCRIPT), "--cli", "claude", "--cd", "repo"], input="review this\n",
+                                text=True, capture_output=True, cwd=self.base, env=self.env)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        recorded = json.loads(self.record.read_text())
+        passed = Path(recorded["args"][recorded["args"].index("--append-system-prompt-file") + 1])
+        self.assertTrue(passed.is_absolute(), passed)  # Claude starts inside repo/, so relative breaks
+        self.assertEqual(recorded["appended"], "root rule\n\ndot-claude rule\n")
+
     def test_no_claude_md_means_no_appended_prompt(self):
         result = self.run_cli("--cli", "claude", "--cd", str(self.base))
         self.assertEqual(result.returncode, 0, result.stderr)
@@ -194,7 +208,8 @@ class SecondOpinionTests(unittest.TestCase):
         # root is private to this run (the shared one holds other sessions' files).
         self.assertEqual(args[args.index("--setting-sources") + 1], "user")
         self.assertIn("--strict-mcp-config", args)
-        self.assertEqual(args[args.index("--tools") + 1], "Bash,Read,Edit,Write,Glob,Grep")
+        # Skills like `how` need subagents, and rigor keeps a todo list.
+        self.assertEqual(args[args.index("--tools") + 1], "Bash,Read,Edit,Write,Glob,Grep,Agent,TodoWrite")
         tmpdir = json.loads(self.record.read_text())["tmpdir"]
         self.assertTrue(tmpdir and not tmpdir.startswith(("/tmp/claude-", "/private/tmp/claude-")), tmpdir)
 

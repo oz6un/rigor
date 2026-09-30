@@ -102,15 +102,18 @@ def run(args):
             command = [executable, "-p", "--permission-mode", "acceptEdits" if args.write else "plan",
                        "--no-session-persistence", "--output-format", "stream-json", "--verbose",
                        "--setting-sources", "user", "--strict-mcp-config"]
-            if (args.cd / "CLAUDE.md").is_file():
-                command += ["--append-system-prompt-file", str(args.cd / "CLAUDE.md")]
+            instructions = [p.read_text() for p in (args.cd / "CLAUDE.md", args.cd / ".claude" / "CLAUDE.md") if p.is_file()]
+            if instructions:
+                # An absolute path: Claude starts inside --cd, so a relative one would resolve twice.
+                (Path(scratch) / "CLAUDE.md").write_text("\n".join(instructions))
+                command += ["--append-system-prompt-file", str((Path(scratch) / "CLAUDE.md").resolve())]
             model = os.environ.get("RIGOR_CLAUDE_MODEL")
             if model:
                 command += ["--model", model]
             if args.write:
                 # Like Codex's workspace-write: commands run without approval, but only in Claude's
                 # sandbox (no network), and the run fails if the sandbox can't start.
-                command += ["--tools", "Bash,Read,Edit,Write,Glob,Grep"]
+                command += ["--tools", "Bash,Read,Edit,Write,Glob,Grep,Agent,TodoWrite"]
                 settings["sandbox"] = {"enabled": True, "autoAllowBashIfSandboxed": True,
                                        "failIfUnavailable": True, "allowUnsandboxedCommands": False}
                 # Claude's sandbox can write its temp root, shared by every session; give it its own.
