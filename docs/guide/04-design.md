@@ -38,7 +38,7 @@ Panels in these skills are host subagents with different lenses, plus one review
 /interrogate the whole branch, skeptically. no nitpicks unless it's an actual bug or regression.
 ```
 
-[`/interrogate`](../../skills/interrogate/SKILL.md) sends the same diff, your request in your own words, and a rubric to reviewers on different models. Each finding is marked reproduced or reasoned. The lead sorts findings into `Act on`, `Consider`, `Noted`, and `Dismissed`, gives a reason for each dismissal, and applies nothing automatically. Read the dismissals too; you can override them.
+[`/interrogate`](../../skills/interrogate/SKILL.md) sends the same diff, intent, and rubric to reviewers on different models. Each finding is marked reproduced or reasoned. The lead sorts findings into `Act on`, `Consider`, `Noted`, and `Dismissed`, gives a reason for each dismissal, and applies nothing automatically. Read the dismissals too; you can override them.
 
 ## How much design does a task need?
 

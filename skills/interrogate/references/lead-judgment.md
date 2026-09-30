@@ -4,7 +4,7 @@ The reviewers have reported. Your job is to filter, put findings in context, and
 
 ## Why this step matters
 
-Adversarial reviewers are useful because they're aggressive, but without context aggression produces noise. The reviewers saw a slice of the codebase and the user's request. They don't know:
+Adversarial reviewers are useful because they're aggressive, but without context aggression produces noise. The reviewers saw a slice of the codebase and a one-paragraph intent. They don't know:
 
 - What was already tried and rejected.
 - Constraints outside the code (timeline, dependencies, migration plans).
