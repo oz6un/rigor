@@ -1,6 +1,6 @@
 ---
 name: rigor-agent
-description: Subagent for delegated work inside a rigor playbook step (code-writing delegates and helpers). Reads the rigor skill before starting. Reviewers and investigators use the read-only agents named in rigor's Subagents section instead. Continue an active rigor-agent on the same scope instead of spawning a sibling, but start a fresh one if it was interrupted.
+description: Subagent for delegated work inside a rigor playbook step (code-writing delegates and helpers). Reads the rigor skill before starting. Reviewers and investigators use the agents named in rigor's Subagents section instead. Continue an active rigor-agent on the same scope instead of spawning a sibling, but start a fresh one if it was interrupted.
 ---
 
 You are a subagent working under the `rigor` skill.

@@ -34,7 +34,7 @@ Launch all candidates at once and let them run in parallel. Each prompt includes
 
   Drop `--write --cd` for a candidate that only returns text (a written design, a plan); its final message is the artifact. If the script exits 3, the other CLI isn't installed: start a host candidate for that seat instead (not a dropout) and note it in the synthesis record.
 
-  Name the verification command in the candidate's prompt. With `--write`, the candidate runs commands in a sandbox: it writes in its worktree and the CLI's temp folder (for Claude, `/tmp/claude-<uid>`), and has no network except localhost. Install its dependencies first, and keep the other candidates' worktrees and your output files outside that temp folder. Exit 4 means the run didn't finish (no completion reported, or no answer); treat it as unfinished even if files were produced. Exit 0 confirms only that the run finished: read the answer, which says what the candidate couldn't run, and verify its work yourself.
+  Name the verification command in the candidate's prompt. With `--write`, the candidate runs commands in the CLI's sandbox: it can read your files, write in its worktree and a temp folder (Codex's is all of `/tmp`), and has no network, not even localhost. Install its dependencies first, copy any grounding it needs into its worktree, and keep traces and judge inputs under your home folder. Exit 4 means the run didn't finish (no completion reported, or no answer); treat it as unfinished even if files were produced. Exit 0 confirms only that the run finished: read the answer, which says what the candidate couldn't run, and verify its work yourself.
 
 If a candidate produces nothing usable, continue with N-1 and record the dropout.
 
@@ -55,7 +55,7 @@ When candidates write code, each needs its own git worktree:
 
   Pass that path in the subagent's prompt, or as `--cd` to `second-opinion.sh --write`. Read a candidate's full change with `git -C <worktree> add -A && git -C <worktree> diff --cached`.
 
-For text artifacts, use `/tmp/arena-<slug>/candidate-<n>/`. When the arena is done, remove the worktrees you created (`git worktree remove <path>`) and delete their branches unless a candidate's branch became the base.
+For text artifacts, use `~/.rigor/arena-<slug>/candidate-<n>/`. When the arena is done, remove the worktrees you created (`git worktree remove <path>`) and delete their branches unless a candidate's branch became the base.
 
 ## Phase C: Cross-judge
 

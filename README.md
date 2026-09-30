@@ -37,7 +37,7 @@ To pick the model used for second opinions, set `RIGOR_CODEX_MODEL` or `RIGOR_CL
 
 The runner is `skills/rigor/scripts/second-opinion.sh`; run it with `--help` for its options. It reads the prompt from stdin and prints the final answer. If inherited environment variables identify both hosts, pass the target explicitly with `--cli claude` or `--cli codex`.
 
-For a code-writing candidate, use `--write --cd <worktree>`. The candidate can then run commands inside a sandbox: Codex's workspace sandbox, or Claude Code's, which the runner requires, without your Claude settings, hooks or MCP servers (the run fails if the sandbox can't start). Sandboxed commands can read your files and write in that directory and the CLI's temp folder (for Claude, `/tmp/claude-<uid>`), but not elsewhere, and have no network except localhost. Install everything the candidate's tests need beforehand, and keep traces and other candidates' work outside that temp folder. Exit 4 means the run didn't finish (no completion reported, or no answer). An exit of 0 confirms only that it finished, not that the candidate ran or passed its tests; its answer says what it couldn't run.
+For a code-writing candidate, use `--write --cd <worktree>`. The candidate can then run commands without approval inside the CLI's sandbox (Codex's workspace sandbox, or Claude Code's, which the runner requires). It's a guardrail, not isolation: commands can read your files and write in the working directory and a temp folder (Codex's is all of `/tmp`), and they have no network, not even localhost. Install everything the candidate's tests need beforehand, and keep traces and judge inputs under your home folder. Either way, only your own Claude settings load, not the checked-out repo's, and no MCP servers. Exit 4 means the run didn't finish (no completion reported, or no answer). An exit of 0 confirms only that it finished, not that the candidate ran or passed its tests; its answer says what it couldn't run.
 
 For evaluations, add `--trace <artifact-dir>/run.jsonl` to capture tool events and the outcome. The artifact directory must exist. Use a new path for every run, outside the candidate's workspace; the runner refuses to overwrite an existing file and retains partial traces on failure. Native CLI session persistence stays disabled.
 
@@ -137,7 +137,7 @@ See [docs/guide](docs/guide/README.md) for a longer walkthrough.
 ## Subagents
 
 - `rigor-agent` works on a step of a rigor playbook. It reads `rigor` before starting.
-- `rigor-reviewer` (Codex only) investigates or reviews without editing the repository. Its TOML requests a read-only sandbox; the parent's runtime settings can override it. Claude Code uses its built-in `Explore` agent for this.
+- `rigor-reviewer` (Codex only) investigates or reviews without editing the repository. Its TOML requests a read-only sandbox; the parent's runtime settings can override it. Claude Code investigates with its built-in `Explore` agent and reviews with a `general-purpose` agent told not to edit.
 - `comment-reviewer` is a read-only reviewer that flags unnecessary comments. `no-comments` runs it.
 
 ## Repository layout

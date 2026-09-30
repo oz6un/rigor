@@ -77,7 +77,13 @@ def run(args):
     if executable is None:
         return 3, f"{args.cli} not installed; run this seat as a host subagent instead and say so in your report"
     prompt = sys.stdin.read()
-    with tempfile.TemporaryDirectory(prefix="rigor-opinion-") as scratch:
+    # The answer and log live under the home folder, which neither CLI's sandbox can write, so a
+    # candidate can't rewrite what gets reported. The child's own temp dir is a separate one.
+    home_tmp = Path.home() / ".rigor" / "tmp"
+    home_tmp.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix="opinion-", dir=home_tmp) as scratch, \
+            tempfile.TemporaryDirectory(prefix="rc-", dir="/tmp") as child_tmp:
+        env = {**os.environ, "RIGOR_NESTED": "1"}
         answer = Path(scratch) / "answer.txt"
         trace = args.trace if args.trace is not None else Path(scratch) / "events.jsonl"
         log = Path(scratch) / "stderr.txt"
@@ -89,25 +95,26 @@ def run(args):
                 command += ["-m", model]
             command += ["-"]
         else:
+            # Only the user's own settings load: the checked-out repo's settings and hooks would run
+            # with the user's privileges, and no MCP servers are needed.
             command = [executable, "-p", "--permission-mode", "acceptEdits" if args.write else "plan",
-                       "--no-session-persistence", "--output-format", "stream-json", "--verbose"]
+                       "--no-session-persistence", "--output-format", "stream-json", "--verbose",
+                       "--setting-sources", "user", "--strict-mcp-config"]
             model = os.environ.get("RIGOR_CLAUDE_MODEL")
             if model:
                 command += ["--model", model]
             if args.write:
                 # Like Codex's workspace-write: commands run without approval, but only in Claude's
-                # sandbox, and the run fails if the sandbox can't start. --restricted drops the
-                # user's and project's settings, hooks and MCP servers, which run unsandboxed or
-                # could widen it. Commands can still read files and write in Claude's temp root.
-                command += ["--restricted", "--strict-mcp-config", "--tools", "Bash,Read,Edit,Write,Glob,Grep",
-                            "--settings", json.dumps({"sandbox": {
-                                "enabled": True, "autoAllowBashIfSandboxed": True,
-                                "failIfUnavailable": True, "allowUnsandboxedCommands": False,
-                                "network": {"allowLocalBinding": True}}})]
+                # sandbox (no network), and the run fails if the sandbox can't start.
+                command += ["--tools", "Bash,Read,Edit,Write,Glob,Grep", "--settings", json.dumps({"sandbox": {
+                    "enabled": True, "autoAllowBashIfSandboxed": True,
+                    "failIfUnavailable": True, "allowUnsandboxedCommands": False}})]
+                # Claude's sandbox can write its temp root, shared by every session; give it its own.
+                env["CLAUDE_CODE_TMPDIR"] = child_tmp
         fd = os.open(trace, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
         with os.fdopen(fd, "w") as events, log.open("w") as errors:
             child = subprocess.run(command, input=prompt, text=True, cwd=args.cd,
-                                   env={**os.environ, "RIGOR_NESTED": "1"}, stdout=events, stderr=errors)
+                                   env=env, stdout=events, stderr=errors)
         try:
             status, message = completion(args.cli, trace, answer)
         except json.JSONDecodeError as error:

@@ -15,7 +15,7 @@ args = sys.argv[1:]
 cli = pathlib.Path(sys.argv[0]).name
 pathlib.Path(os.environ["RECORD"]).write_text(json.dumps({
     "cli": cli, "args": args, "cwd": os.getcwd(), "prompt": sys.stdin.read(),
-    "nested": os.environ.get("RIGOR_NESTED")}))
+    "nested": os.environ.get("RIGOR_NESTED"), "tmpdir": os.environ.get("CLAUDE_CODE_TMPDIR")}))
 mode = os.environ.get("RESPONSE", "success")
 if cli == "codex":
     pathlib.Path(args[args.index("-o") + 1]).write_text("review complete")
@@ -78,10 +78,14 @@ class SecondOpinionTests(unittest.TestCase):
                 recorded = json.loads(self.record.read_text())
                 self.assertEqual(recorded["prompt"], "review this\n")
                 self.assertEqual(recorded["nested"], "1")
-                if cli == "claude":  # a read-only review stays in plan mode, with no auto-run sandbox
-                    self.assertIn("plan", recorded["args"])
-                    self.assertNotIn("--settings", recorded["args"])
                 if cli == "claude":
+                    # A read-only review stays in plan mode, with no auto-run sandbox, and loads only
+                    # the user's own settings: the reviewed repo's hooks never run, and no MCP servers.
+                    args = recorded["args"]
+                    self.assertEqual(args[args.index("--permission-mode") + 1], "plan")
+                    self.assertNotIn("--settings", args)
+                    self.assertEqual(args[args.index("--setting-sources") + 1], "user")
+                    self.assertIn("--strict-mcp-config", args)
                     self.assertEqual(Path(recorded["cwd"]).resolve(), self.base.resolve())
 
     def test_a_denied_tool_still_returns_the_answer(self):
@@ -170,12 +174,14 @@ class SecondOpinionTests(unittest.TestCase):
         self.assertNotIn("--dangerously-skip-permissions", args)
         sandbox = json.loads(args[args.index("--settings") + 1])["sandbox"]
         self.assertEqual(sandbox, {"enabled": True, "autoAllowBashIfSandboxed": True,
-                                   "failIfUnavailable": True, "allowUnsandboxedCommands": False,
-                                   "network": {"allowLocalBinding": True}})
-        # The user's and the project's settings, hooks and MCP servers don't apply to a candidate.
-        self.assertIn("--restricted", args)
+                                   "failIfUnavailable": True, "allowUnsandboxedCommands": False})
+        # The worktree's own settings and hooks don't apply, no MCP servers load, and Claude's temp
+        # root is private to this run (the shared one holds other sessions' files).
+        self.assertEqual(args[args.index("--setting-sources") + 1], "user")
         self.assertIn("--strict-mcp-config", args)
         self.assertEqual(args[args.index("--tools") + 1], "Bash,Read,Edit,Write,Glob,Grep")
+        tmpdir = json.loads(self.record.read_text())["tmpdir"]
+        self.assertTrue(tmpdir and not tmpdir.startswith(("/tmp/claude-", "/private/tmp/claude-")), tmpdir)
 
     def test_missing_cli_retains_fallback_status(self):
         (self.bin / "claude").unlink()
