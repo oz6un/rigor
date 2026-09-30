@@ -13,7 +13,7 @@ def parse_args():
     parser = argparse.ArgumentParser(
         prog="second-opinion",
         description="Run a stdin prompt through the other CLI; print its final answer.",
-        epilog="Exit codes: 0 completed, 1 CLI/output failure, 2 usage, 3 missing CLI, 4 denied or incomplete run.")
+        epilog="Exit codes: 0 completed, 1 CLI/output failure, 2 usage, 3 missing CLI, 4 Claude denied a tool, or no completion reported (Codex denials are not detected).")
     parser.add_argument("--cli", choices=("codex", "claude"), help="explicit target CLI")
     parser.add_argument("--write", action="store_true", help="allow edits; use a separate worktree")
     parser.add_argument("--cd", type=Path, default=Path.cwd(), help="working directory")

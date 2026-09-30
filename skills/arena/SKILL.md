@@ -61,7 +61,7 @@ For text artifacts, use `/tmp/arena-<slug>/candidate-<n>/`. When the arena is do
 
 After every candidate has finished, get one independent judge from a different model family than yours: run it through `<this skill's dir>/../rigor/scripts/second-opinion.sh` (read-only, the default). Give it the rubric and the candidates by path label. It scores each criterion per candidate and recommends a base with reasons. It runs while you do your own reading in Phase D. Don't start it while candidates are still writing.
 
-If the other CLI isn't installed, the judge is a read-only host subagent (Claude Code `Explore`; Codex `rigor-reviewer`); note that it shares your model family. The Codex role requests its sandbox through TOML, subject to parent runtime overrides. If unavailable, instruct a host subagent not to edit and report that the restriction is prompt-only.
+If the other CLI isn't installed, the judge is a read-only host subagent (Claude Code `Explore`; Codex `rigor-reviewer`); note that it shares your model family.
 
 ## Phase D: Pick a base
 

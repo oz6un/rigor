@@ -28,7 +28,7 @@ Edit only the verification skill's own directory: its `SKILL.md`, `features/`, a
 
 2. **Index hygiene.** Read `features/README.md` and list its sibling files. Fix missing, extra, duplicate, or dead entries.
 
-3. **Source pass.** Spawn one read-only subagent per feature file, all in parallel (Claude Code: `Explore` agents; Codex: `rigor-reviewer`). The Codex role requests a read-only sandbox through TOML, subject to parent runtime overrides. If unavailable, instruct a host subagent not to edit and report that the restriction is prompt-only. Each explains how the feature works from source, flags likely drift with file citations, and returns one concise live-verification recipe. Subagents never drive the app or edit files. Return shape: feature summary, source entry points, likely drift (or none), one recipe.
+3. **Source pass.** Spawn one read-only subagent per feature file, all in parallel (Claude Code: `Explore` agents; Codex: `rigor-reviewer`). Each explains how the feature works from source, flags likely drift with file citations, and returns one concise live-verification recipe. Subagents never drive the app or edit files. Return shape: feature summary, source entry points, likely drift (or none), one recipe.
 
 4. **Reconcile.** Confirm every feature file got a summary. Merge overlapping recipes so the live pass needs as few app states as practical. Spot-check cited drift; don't re-prove clean claims. Check recent commits for user-facing surfaces missing from the map, and require a concrete source path before calling one missing.
 

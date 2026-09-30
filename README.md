@@ -37,7 +37,7 @@ To pick the model used for second opinions, set `RIGOR_CODEX_MODEL` or `RIGOR_CL
 
 The runner is `skills/rigor/scripts/second-opinion.sh`; run it with `--help` for its options. It reads the prompt from stdin and prints the final answer. If inherited environment variables identify both hosts, pass the target explicitly with `--cli claude` or `--cli codex`.
 
-For a code-writing candidate, use `--write --cd <worktree>`. Claude may still need permission for verification commands: pass a narrow rule such as `--claude-allow-tool 'Bash(npm test *)'`. Repeat the option for additional commands. It requires `--write` and is ignored for Codex, which uses its own sandbox policy. Exit 4 means denied tools or missing completion; an exit of 0 confirms CLI completion, not passing tests.
+For a code-writing candidate, use `--write --cd <worktree>`. Claude may still need permission for verification commands: pass a narrow rule such as `--claude-allow-tool 'Bash(npm test *)'`. Repeat the option for additional commands. It requires `--write` and is ignored for Codex, which uses its own sandbox policy. Exit 4 means Claude denied a tool, or the CLI didn't report completion; Codex's denials aren't detected. An exit of 0 confirms CLI completion, not passing tests.
 
 For evaluations, add `--trace <artifact-dir>/run.jsonl` to capture tool events and the outcome. The artifact directory must exist. Use a new path for every run, outside the candidate's workspace; the runner refuses to overwrite an existing file and retains partial traces on failure. Native CLI session persistence stays disabled.
 
