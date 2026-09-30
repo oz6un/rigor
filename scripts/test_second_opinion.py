@@ -1,0 +1,151 @@
+import json
+import os
+from pathlib import Path
+import subprocess
+import sys
+import tempfile
+import unittest
+
+
+SCRIPT = Path(__file__).resolve().parent.parent / "skills/rigor/scripts/second-opinion.sh"
+FAKE = r'''
+import json, os, pathlib, sys
+args = sys.argv[1:]
+cli = pathlib.Path(sys.argv[0]).name
+pathlib.Path(os.environ["RECORD"]).write_text(json.dumps({
+    "cli": cli, "args": args, "cwd": os.getcwd(), "prompt": sys.stdin.read(),
+    "nested": os.environ.get("RIGOR_NESTED")}))
+mode = os.environ.get("RESPONSE", "success")
+if cli == "codex":
+    pathlib.Path(args[args.index("-o") + 1]).write_text("review complete")
+    events = [{"type": "item.completed", "item": {"type": "command_execution", "command": "python3 check.py", "exit_code": 0}},
+              {"type": "turn.completed", "usage": {}}]
+    if mode == "error": events[-1] = {"type": "turn.failed", "error": {"message": "provider failed"}}
+else:
+    events = [{"type": "assistant", "message": {"content": [{"type": "tool_use", "name": "Read", "input": {"file_path": "README.md"}}]}},
+              {"type": "result", "subtype": "success", "is_error": False, "result": "review complete", "permission_denials": []}]
+    if mode == "denied": events[-1]["permission_denials"] = [{"tool_name": "Bash", "tool_input": {"command": "python3 check.py"}}]
+    if mode == "error": events[-1].update(is_error=True, subtype="error_during_execution")
+if mode == "missing": events.pop()
+if mode == "malformed":
+    print("not json")
+else:
+    for event in events: print(json.dumps(event))
+if mode == "nonzero":
+    print("provider unavailable", file=sys.stderr)
+    sys.exit(9)
+'''
+
+
+class SecondOpinionTests(unittest.TestCase):
+    def setUp(self):
+        self.scratch = tempfile.TemporaryDirectory()
+        self.addCleanup(self.scratch.cleanup)
+        self.base = Path(self.scratch.name)
+        self.bin = self.base / "bin"
+        self.bin.mkdir()
+        for cli in ("claude", "codex"):
+            executable = self.bin / cli
+            executable.write_text(f"#!{sys.executable}\n" + FAKE)
+            executable.chmod(0o755)
+        self.record = self.base / "record.json"
+        self.env = {k: v for k, v in os.environ.items() if not k.startswith(("CODEX_", "RIGOR_")) and k != "CLAUDECODE"}
+        self.env.update(PATH=f"{self.bin}:{Path(sys.executable).parent}:/usr/bin:/bin",
+                        HOME=str(self.base), RECORD=str(self.record), CODEX_THREAD_ID="host")
+
+    def run_cli(self, *args, **env):
+        return subprocess.run([str(SCRIPT), *args], input="review this\n", text=True,
+                              capture_output=True, env={**self.env, **env})
+
+    def test_success_prints_only_answer_for_each_cli(self):
+        for cli in ("claude", "codex"):
+            with self.subTest(cli=cli):
+                result = self.run_cli("--cli", cli, "--cd", str(self.base))
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(result.stdout, "review complete\n")
+                recorded = json.loads(self.record.read_text())
+                self.assertEqual(recorded["prompt"], "review this\n")
+                self.assertEqual(recorded["nested"], "1")
+                if cli == "claude":
+                    self.assertEqual(Path(recorded["cwd"]).resolve(), self.base.resolve())
+
+    def test_denied_verification_is_not_success(self):
+        result = self.run_cli("--write", RESPONSE="denied")
+        self.assertEqual(result.returncode, 4, result.stdout)
+        self.assertIn("Bash", result.stderr)
+        self.assertEqual(result.stdout, "")
+
+    def test_invalid_or_failed_completion_is_not_success(self):
+        for cli in ("claude", "codex"):
+            for response in ("error", "missing", "malformed", "nonzero"):
+                with self.subTest(cli=cli, response=response):
+                    result = self.run_cli("--cli", cli, RESPONSE=response)
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertEqual(result.stdout, "")
+                    self.assertIn("second-opinion:", result.stderr)
+
+    def test_trace_keeps_tool_events_and_denied_result(self):
+        for cli, response, status in (("claude", "success", 0), ("claude", "denied", 4), ("codex", "success", 0)):
+            with self.subTest(cli=cli, response=response):
+                trace = self.base / f"{cli}-{response}.jsonl"
+                result = self.run_cli("--cli", cli, "--trace", str(trace), RESPONSE=response)
+                self.assertEqual(result.returncode, status, result.stderr)
+                events = [json.loads(line) for line in trace.read_text().splitlines()]
+                self.assertEqual(len(events), 2)
+                if cli == "claude":
+                    self.assertEqual(events[0]["message"]["content"][0]["name"], "Read")
+                    self.assertEqual(events[-1]["type"], "result")
+                else:
+                    self.assertEqual(events[0]["item"]["command"], "python3 check.py")
+                self.assertEqual(trace.stat().st_mode & 0o777, 0o600)
+
+    def test_existing_trace_is_never_overwritten(self):
+        trace = self.base / "existing.jsonl"
+        trace.write_text("previous evidence\n")
+        result = self.run_cli("--trace", str(trace))
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(trace.read_text(), "previous evidence\n")
+        self.assertFalse(self.record.exists())
+
+    def test_ambiguous_host_needs_explicit_cli(self):
+        result = self.run_cli(CLAUDECODE="1")
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("--cli", result.stderr)
+        self.assertFalse(self.record.exists())
+        explicit = self.run_cli("--cli", "claude", CLAUDECODE="1")
+        self.assertEqual(explicit.returncode, 0, explicit.stderr)
+        self.assertEqual(json.loads(self.record.read_text())["cli"], "claude")
+
+    def test_configuration_alone_does_not_identify_host(self):
+        result = self.run_cli(CODEX_THREAD_ID="", CODEX_HOME=str(self.base))
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("--cli", result.stderr)
+
+    def test_claude_tool_allowances_require_write_and_preserve_rules(self):
+        rule = "Bash(python3 check.py *)"
+        result = self.run_cli("--claude-allow-tool", rule)
+        self.assertEqual(result.returncode, 2)
+        self.assertFalse(self.record.exists())
+        result = self.run_cli("--write", "--claude-allow-tool", rule,
+                              "--claude-allow-tool", "Bash(npm test *)")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        args = json.loads(self.record.read_text())["args"]
+        self.assertIn(rule, args)
+        self.assertIn("Bash(npm test *)", args)
+        self.assertIn("acceptEdits", args)
+        self.assertNotIn("bypassPermissions", args)
+
+    def test_missing_cli_retains_fallback_status(self):
+        (self.bin / "claude").unlink()
+        result = self.run_cli()
+        self.assertEqual(result.returncode, 3)
+        self.assertIn("host subagent", result.stderr)
+
+    def test_missing_option_values_are_usage_errors(self):
+        for option in ("--cli", "--cd", "--trace", "--claude-allow-tool"):
+            with self.subTest(option=option):
+                self.assertEqual(self.run_cli(option).returncode, 2)
+
+
+if __name__ == "__main__":
+    unittest.main()
