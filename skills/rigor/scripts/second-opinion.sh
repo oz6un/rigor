@@ -5,8 +5,7 @@
 # Usage: second-opinion.sh [--cli codex|claude] [--write] [--cd DIR] < prompt.txt
 #
 #   (default)   read-only: the other CLI can read files but not edit them
-#   --write     let it edit files under DIR; give it a separate worktree or scratch dir.
-#               claude -p then can't read outside DIR.
+#   --write     let it edit files under DIR; give it a separate worktree
 #   --cd DIR    run it in DIR (default: the current directory)
 #   --cli NAME  use codex or claude instead of detecting the host
 #
