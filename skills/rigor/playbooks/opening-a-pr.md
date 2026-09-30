@@ -8,13 +8,7 @@ The last step of every other playbook. All PR operations use the GitHub CLI (`gh
 
 **Before opening.** Run `deslop` over the diff before committing and `no-comments` before requesting review. Write every PR title, PR description, and commit body with `technical-writing` (every layer except Diátaxis), then run `unslop` over it.
 
-**Review before done.** After verifying the change, and before opening the PR or telling the user it's done, have someone other than you review it, scaled to what a mistake would cost:
-
-- The full `interrogate` panel when a mistake would be costly or hard to undo, or when the code runs where your tests don't reach: other people's machines and settings, concurrent runs, state left by earlier runs or versions, installs and updates, security.
-- One reviewer (`interrogate` with reviewer A alone) for other changes to behavior.
-- None for a small change whose behavior your tests fully cover; say so in the report.
-
-Fix what the verdict puts under Act on and verify the fix; review again only if the fix is substantial. A known blocker means the work isn't done. Bring findings that conflict with the user's request to the user.
+**Review.** Run the review in the rigor skill's Evidence rules before opening the PR.
 
 **Titles.** Use Conventional Commits: `type(scope): subject`, where type is `feat`, `fix`, `docs`, `refactor`, `test`, `chore`, or `perf`, and scope is the changed area (for example `rigor` or `watch-pr`). Keep the subject short and imperative, name a real symbol when one carries the change, and leave off the trailing period. Example: `fix(watch-pr): count review passes per run id`.
 
@@ -34,4 +28,4 @@ After the sections, attach screenshots or videos when they prove a claim. Leave 
 
 **No automatic babysitting.** Opening a PR doesn't start a babysit. Post the URL and keep building until the phase or stack is done. Babysit only when the user asks, after the whole stack exists; babysitting each PR as it opens stalls the build and spends CI on commits that later pushes will restart. Push back when review feedback drifts from the intent of the change.
 
-A subagent that opens a PR runs `interrogate`, `deslop`, and `no-comments`, posts the URL, and returns to its parent without babysitting. The exception is an Autopilot-full or Autopilot-stack owner: its brief assigns the babysit loop, which counts as the request `playbooks/babysit.md` waits for. That owner starts the loop after its code-ready report and reports merge-ready (or STACK-READY) as its playbook says, and the rule above about waiting for the whole stack doesn't apply to it.
+A subagent that opens a PR runs that review, `deslop`, and `no-comments`, posts the URL, and returns to its parent without babysitting. The exception is an Autopilot-full or Autopilot-stack owner: its brief assigns the babysit loop, which counts as the request `playbooks/babysit.md` waits for. That owner starts the loop after its code-ready report and reports merge-ready (or STACK-READY) as its playbook says, and the rule above about waiting for the whole stack doesn't apply to it.

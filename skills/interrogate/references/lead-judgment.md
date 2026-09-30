@@ -19,7 +19,7 @@ You have the full conversation. Use it.
 
 **Hypothetical versus actual.** "What if someone passes null?" is a finding only if a caller can pass null. Trace the call site. If upstream validation or the type system prevents it, dismiss it. Reviewers working from a diff can't always see the whole call chain; you can.
 
-**Reproduced versus reasoned.** Act on a reproduced finding. Confirm a reasoned one yourself before acting on it, or put it under Consider.
+**Reproduced versus reasoned.** A reproduced finding is real; the rules below decide what to do about it. Confirm a reasoned one yourself before acting on it, or put it under Consider.
 
 **Suggestions that add code.** Reviewers lean toward adding guards and machinery. Before accepting one, ask how likely the failure it guards against is; if it isn't, put it under Noted. A suggestion to remove something deserves the opposite bias.
 

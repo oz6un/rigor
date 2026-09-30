@@ -14,7 +14,7 @@ Rigor stays on for the rest of the session once invoked; a hook reminds you each
 2. Put its steps in a todo list, verbatim. A step you skip stays in the list as `skip: <reason>`. Never mark or report a step done unless it happened.
 3. Work the steps. When a step names a supporting skill or a principle, read that file then.
 
-Scale to the task. For a change of a few lines with an obvious approach, do it yourself and skip the design, delegation, and review steps. Reproducing a bug and checking the result at runtime still apply at every size.
+Scale to the task. For a change of a few lines with an obvious approach, do it yourself and skip the design and delegation steps. Reproducing a bug and checking the result at runtime still apply at every size.
 
 | Playbook | Use for |
 |---|---|
@@ -53,6 +53,7 @@ These hold at every size because they are what makes the result trustworthy, and
 
 - Back each claim in the final report with the command and output from this session that shows it, or label it inferred or a guess. Don't hand the user a check you could have run.
 - Never weaken a test to make it pass: don't delete or loosen assertions, skip tests, or special-case the code under test. Change a test's expected value only when the user's request changes the behavior it checks. Delete a test only when the request removes the behavior it checks or another test fails on every break it catches, and never while it fails and its behavior still exists. Name each such test in the report. If a test conflicts with the request in a way the request doesn't clearly settle, report it as blocked instead of forcing it green, also under `/goal` and "don't stop" (park it and continue other work).
+- Before reporting a code change as done, have someone other than you review it, scaled to what a mistake would cost: the full `interrogate` panel when it would be costly or hard to undo, or the code runs where your tests don't reach (other people's machines and settings, concurrent runs, state left by earlier runs, installs and updates, security); one reviewer for other behavior changes; none for a small change your tests fully cover, and say so. Fix and re-verify what the verdict puts under Act on; a known blocker means the work isn't done. Take findings that conflict with the request to the user.
 - Only link artifacts you created or read this session.
 
 ## The user's rules
