@@ -40,8 +40,8 @@ def parse_args():
 
 def completion(cli, trace, answer):
     result = None
-    completed = False
-    failed = False
+    terminal = None
+    problem = ""
     with trace.open() as events:
         for line in events:
             if not line.strip():
@@ -52,13 +52,18 @@ def completion(cli, trace, answer):
             if cli == "claude" and event.get("type") == "result":
                 result = event
             if cli == "codex":
-                completed |= event.get("type") == "turn.completed"
-                failed |= event.get("type") in ("turn.failed", "error")
+                if event.get("type") in ("turn.completed", "turn.failed"):
+                    terminal = event["type"]
+                if event.get("type") == "turn.failed":
+                    error = event.get("error")
+                    problem = str(error.get("message", "")) if isinstance(error, dict) else str(error)
+                elif event.get("type") == "error":
+                    problem = str(event.get("message", ""))
     if cli == "codex":
-        if failed:
-            return 1, "Codex reported a failed run"
-        if not completed:
-            return 4, "Codex did not report completion"
+        if terminal == "turn.failed":
+            return 1, f"Codex reported a failed run: {problem}"
+        if terminal != "turn.completed":
+            return 4, "Codex did not report completion" + (f": {problem}" if problem else "")
         text = answer.read_text() if answer.exists() else ""
     else:
         if result is None:
@@ -68,9 +73,15 @@ def completion(cli, trace, answer):
             raise ValueError("invalid Claude permission_denials")
         if denials:
             names = sorted({str(denial.get("tool_name", "unknown")) for denial in denials if isinstance(denial, dict)})
-            return 4, f"Claude denied tools ({', '.join(names)}); required work may be incomplete"
+            message = f"Claude denied tools ({', '.join(names)}); required work may be incomplete"
+            partial = result.get("result")
+            if isinstance(partial, str) and partial.strip():
+                message += f"\nPartial answer: {partial}"
+            return 4, message
         if result.get("is_error") is not False or result.get("subtype") != "success":
-            return 1, "Claude reported a failed run"
+            errors = result.get("errors") or result.get("result") or ""
+            detail = "; ".join(map(str, errors)) if isinstance(errors, list) else str(errors)
+            return 1, "Claude reported a failed run" + (f": {detail}" if detail else "")
         text = result.get("result")
     if not isinstance(text, str) or not text.strip():
         return 4, f"{cli} returned no final answer"
@@ -105,9 +116,17 @@ def run(args):
         with os.fdopen(fd, "w") as events, log.open("w") as errors:
             child = subprocess.run(command, input=prompt, text=True, cwd=args.cd,
                                    env={**os.environ, "RIGOR_NESTED": "1"}, stdout=events, stderr=errors)
+        try:
+            status, message = completion(args.cli, trace, answer)
+        except json.JSONDecodeError as error:
+            status, message = 1, f"invalid event JSON: {error}\n{error.doc[:2000]}"
+        except (OSError, ValueError) as error:
+            status, message = 1, str(error)
         if child.returncode != 0:
-            return 1, f"{args.cli} exited {child.returncode}: {log.read_text().strip()}"
-        return completion(args.cli, trace, answer)
+            detail = message if status else f"Partial answer: {message.strip()}"
+            return 1, "\n".join(part for part in (
+                f"{args.cli} exited {child.returncode}", detail, log.read_text().strip()) if part)
+        return status, message
 
 
 def main():

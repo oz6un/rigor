@@ -66,14 +66,18 @@ uninstall() {
 }
 
 case "$mode" in
-  --uninstall) uninstall; exit 0 ;;
-  install) ;;
+  --uninstall|install) ;;
   *) echo "usage: install.sh [--uninstall]" >&2; exit 2 ;;
 esac
 
 # Refuse to start on a config we can't parse, before changing anything.
 python3 "$root/scripts/hooks.py" check "$claude_settings" "$mode_hook"
 python3 "$root/scripts/hooks.py" check "$codex_hooks" "$mode_hook"
+
+if [[ "$mode" == --uninstall ]]; then
+  uninstall
+  exit 0
+fi
 
 mkdir -p "$claude_skills" "$codex_skills" "$claude_agents" "$codex_agents"
 
