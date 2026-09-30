@@ -60,7 +60,7 @@ class InstallTests(unittest.TestCase):
     def test_uninstall_removes_agents_absent_from_current_sources(self):
         self.check_removed_agent("--uninstall")
 
-    def test_uninstall_validates_hooks_before_removing_files(self):
+    def test_uninstall_removes_what_it_can_and_reports_a_broken_config(self):
         result = self.install()
         self.assertEqual(result.returncode, 0, result.stderr)
         config = self.home / ".codex/hooks.json"
@@ -68,9 +68,25 @@ class InstallTests(unittest.TestCase):
         config.write_text(original)
         result = self.install("--uninstall")
         self.assertNotEqual(result.returncode, 0)
+        self.assertIn("hooks.py:", result.stderr)
         self.assertEqual(config.read_text(), original)
-        self.assertTrue((self.home / ".agents/skills/rigor/SKILL.md").is_file())
-        self.assertTrue((self.home / ".codex/agents/rigor-agent.toml").is_file())
+        self.assertFalse((self.home / ".agents/skills/rigor").exists())
+        self.assertFalse((self.home / ".codex/agents/rigor-agent.toml").exists())
+        self.assertNotIn("mode-hook.py", (self.home / ".claude/settings.json").read_text())
+
+    def test_upgrade_keeps_an_existing_hook_command_byte_identical(self):
+        # Codex trusts a hook by a hash of its command, so rewriting an installed entry silently
+        # turns rigor off in Codex until the user re-trusts it.
+        script = "/Users/example/.local/share/rigor/skills/rigor/scripts/mode-hook.py"
+        entry = {"hooks": [{"type": "command", "command": f'python3 "{script}" || true'}]}
+        config = self.home / ".codex/hooks.json"
+        config.parent.mkdir(parents=True)
+        original = json.dumps({"hooks": {"UserPromptSubmit": [entry], "SessionStart": [entry]}}, indent=2) + "\n"
+        config.write_text(original)
+        result = subprocess.run(["python3", str(self.clone / "scripts/hooks.py"), "add", str(config), script],
+                                text=True, capture_output=True)
+        self.assertEqual(result.returncode, 1, result.stderr)
+        self.assertEqual(config.read_text(), original)
 
     def check_removed_agent(self, *args):
         result = self.install()
