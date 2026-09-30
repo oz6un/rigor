@@ -107,6 +107,6 @@ if [[ ${#skipped[@]} -gt 0 ]]; then
   printf '  %s\n' "${skipped[@]}" >&2
 fi
 echo "Installed from $root: $linked skill and agent links for Claude Code and Codex."
-echo "Codex only: open Codex, run /hooks, and trust rigor's two hooks (again after an update changes them)."
+echo "Codex only: after a first install, or if Codex stops running rigor, open Codex, run /hooks, and trust rigor's two hooks."
 echo "rigor updates itself from GitHub once a day at session start; to stop that: touch ~/.rigor/no-auto-update"
 echo "Then start a new session and type /rigor (Claude Code) or \$rigor (Codex). It stays on for the rest of that session."
