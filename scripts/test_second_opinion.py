@@ -50,9 +50,16 @@ if mode == "long":
     for _ in range(5000): print(json.dumps(events[0]))
     for event in events: print(json.dumps(event))
     sys.exit(0)
-if mode == "slow":
+if mode == "big_last":  # the line that crosses a write limit is the last one
+    events[-1]["result"] = "x" * 2000
+    for event in events: print(json.dumps(event))
+    sys.exit(0)
+if mode == "slow":  # a tool process that ignores SIGTERM, then a long wait
+    import subprocess, time
+    tool = subprocess.Popen([sys.executable, "-c", "import signal, time; signal.signal(signal.SIGTERM, signal.SIG_IGN); time.sleep(30)"])
+    pathlib.Path(os.environ["RECORD"] + ".tool").write_text(str(tool.pid))
     print(json.dumps(events[0]), flush=True)
-    import time; time.sleep(30)
+    time.sleep(30)
 if mode == "malformed_failure":
     print("Error: not logged in")
     print("auth token expired", file=sys.stderr)
@@ -71,7 +78,7 @@ if mode == "stdout_failure": sys.exit(9)
 class SecondOpinionTests(unittest.TestCase):
     def setUp(self):
         # A write candidate can write /tmp and $TMPDIR, so traces the runner should accept live
-        # elsewhere; on Linux the default temp folder is /tmp.
+        # elsewhere; on Linux the default temp folder is /tmp. TMPDIR is inherited unless a test sets it.
         self.scratch = tempfile.TemporaryDirectory(dir="/var/tmp")
         self.addCleanup(self.scratch.cleanup)
         self.base = Path(self.scratch.name).resolve()  # macOS's /var is a symlink to /private/var
@@ -86,7 +93,7 @@ class SecondOpinionTests(unittest.TestCase):
         self.record = self.base / "record.json"
         self.env = {k: v for k, v in os.environ.items() if not k.startswith(("CODEX_", "RIGOR_")) and k != "CLAUDECODE"}
         self.env.update(PATH=str(self.bin),
-                        HOME=str(self.base), TMPDIR=str(self.base / "tmpdir"), RECORD=str(self.record),
+                        HOME=str(self.base), RECORD=str(self.record),
                         CODEX_THREAD_ID="host")
         (self.base / "tmpdir").mkdir()
 
@@ -200,11 +207,12 @@ class SecondOpinionTests(unittest.TestCase):
             refused.append(Path(str(work).swapcase()) / "run.jsonl")
         for trace in refused:
             with self.subTest(trace=trace):
-                result = self.run_cli("--write", "--cd", str(work), "--trace", str(trace))
+                result = self.run_cli("--write", "--cd", str(work), "--trace", str(trace), TMPDIR=str(tmpdir))
                 self.assertEqual(result.returncode, 2, result.stderr)
                 self.assertFalse(self.record.exists())
                 self.assertFalse(trace.exists())
-        result = self.run_cli("--write", "--cd", str(work), "--trace", str(work / ".." / "safe" / "run.jsonl"))
+        result = self.run_cli("--write", "--cd", str(work), "--trace", str(work / ".." / "safe" / "run.jsonl"),
+                              TMPDIR=str(tmpdir))
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertTrue((safe / "run.jsonl").exists())
 
@@ -212,12 +220,12 @@ class SecondOpinionTests(unittest.TestCase):
         result = self.run_cli("--cli", "claude", RESPONSE="separators")
         self.assertEqual((result.returncode, result.stdout), (0, "line\u2028one\x85two\n"), result.stderr)
 
-    def test_a_killed_run_keeps_its_events_and_stops_its_child(self):
+    def test_a_killed_run_keeps_its_events_and_stops_its_child_and_tools(self):
         trace = self.base / "killed.jsonl"
-        before = set(Path("/tmp").glob("rc-*"))
         runner = subprocess.Popen([str(SCRIPT), "--cli", "claude", "--write", "--trace", str(trace)], stdin=subprocess.PIPE,
                                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, cwd=self.base / "tmpdir",
-                                  env={**self.env, "RESPONSE": "slow"})
+                                  env={**self.env, "RESPONSE": "slow"}, start_new_session=True)
+        self.addCleanup(lambda: runner.poll() is None and os.killpg(runner.pid, signal.SIGKILL))
         runner.stdin.write(b"review this\n"); runner.stdin.close()
         for _ in range(100):
             if trace.exists() and trace.stat().st_size:
@@ -225,11 +233,13 @@ class SecondOpinionTests(unittest.TestCase):
             time.sleep(0.1)
         self.assertTrue(trace.stat().st_size)  # readable while the run is still going
         runner.terminate()
-        self.assertEqual(runner.wait(timeout=10), 143)
+        self.assertEqual(runner.wait(timeout=15), 143)
         self.assertEqual(json.loads(trace.read_text())["type"], "assistant")
-        with self.assertRaises(ProcessLookupError):  # the fake CLI was stopped too
-            os.kill(json.loads(self.record.read_text())["pid"], 0)
-        self.assertEqual(set(Path("/tmp").glob("rc-*")) - before, set())
+        recorded = json.loads(self.record.read_text())
+        for pid in (recorded["pid"], int(Path(str(self.record) + ".tool").read_text())):
+            with self.assertRaises(ProcessLookupError):  # the fake CLI and the tool it started
+                os.kill(pid, 0)
+        self.assertFalse(Path(recorded["tmpdir"]).exists())
 
     def test_a_bad_line_before_a_long_stream_fails_without_hanging(self):
         trace = self.base / "flood.jsonl"
@@ -239,17 +249,18 @@ class SecondOpinionTests(unittest.TestCase):
         self.assertIn("invalid event JSON", result.stderr)
         self.assertEqual(len(trace.read_text().splitlines()), 5003)
 
-    def test_a_trace_that_cant_be_written_fails_the_run_but_lets_it_finish(self):
-        def small_files():  # writes past 64 KB fail with EFBIG
-            resource.setrlimit(resource.RLIMIT_FSIZE, (65536, 65536))
-            signal.signal(signal.SIGXFSZ, signal.SIG_IGN)
-        trace = self.base / "full.jsonl"
-        result = subprocess.run([str(SCRIPT), "--cli", "claude", "--trace", str(trace)], input="review this\n",
-                                text=True, capture_output=True, env={**self.env, "RESPONSE": "long"},
-                                preexec_fn=small_files, timeout=30)
-        self.assertEqual(result.returncode, 1, result.stderr)
-        self.assertIn("trace incomplete", result.stderr)
-        self.assertIn("review complete", result.stderr)  # the run itself finished
+    def test_a_trace_that_cant_be_written_fails_the_run(self):
+        for response, limit in (("long", 65536), ("big_last", 1500)):
+            with self.subTest(response=response):
+                def small_files():  # writes past the limit fail with EFBIG
+                    resource.setrlimit(resource.RLIMIT_FSIZE, (limit, limit))
+                    signal.signal(signal.SIGXFSZ, signal.SIG_IGN)
+                trace = self.base / f"{response}.jsonl"
+                result = subprocess.run([str(SCRIPT), "--cli", "claude", "--trace", str(trace)], input="review this\n",
+                                        text=True, capture_output=True, env={**self.env, "RESPONSE": response},
+                                        preexec_fn=small_files, timeout=30)
+                self.assertEqual(result.returncode, 1, result.stderr)
+                self.assertIn("trace write failed", result.stderr)
 
     def test_codex_answer_is_its_last_message_and_none_is_incomplete(self):
         result = self.run_cli("--cli", "codex")

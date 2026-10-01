@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import argparse
+import contextlib
 import json
 import os
 from pathlib import Path
@@ -32,23 +33,25 @@ def parse_args():
     if sys.stdin.isatty():
         parser.error("pipe the prompt on stdin")
     if args.trace is not None:
-        args.trace = Path(os.path.abspath(args.trace))
+        args.trace = args.trace.absolute()
         if os.path.lexists(args.trace):
             parser.error(f"trace already exists, never overwritten: {args.trace}")
         if not args.trace.parent.is_dir():
             parser.error(f"trace folder does not exist: {args.trace.parent}")
-        if args.write and (args.trace.parent.resolve() != args.trace.parent or writable_by_candidate(args.trace, args.cd)):
-            parser.error("with --write, --trace must be a real path (no symlinks) outside --cd, /tmp and $TMPDIR, "
-                         "where the candidate can write")
+        # A symlink on the way could be re-pointed by the candidate, redirecting later readers.
+        real = args.trace.parent.resolve()
+        if args.write and (real != Path(os.path.abspath(args.trace.parent)) or writable_by_candidate(real, args.cd)):
+            parser.error(f"with --write, --trace must be a real path (no symlinks; this folder is {real}) "
+                         "outside --cd, /tmp and $TMPDIR, where the candidate can write")
     return args
 
 
-def writable_by_candidate(trace, cd):
+def writable_by_candidate(folder, cd):
     # By default a write candidate can write --cd, /tmp and $TMPDIR, and could rewrite a trace
     # there before anyone reads it. Folders are compared by identity, since one folder has several
     # spellings (letter case, macOS firmlinks).
     roots = [os.stat(p) for p in (cd, "/tmp", os.environ.get("TMPDIR") or "/tmp") if os.path.isdir(p)]
-    return any(os.path.samestat(os.stat(folder), root) for folder in trace.parents for root in roots)
+    return any(os.path.samestat(os.stat(f), root) for f in (folder, *folder.parents) for root in roots)
 
 
 def completion(cli, events):
@@ -147,38 +150,50 @@ def run(args):
             command += ["--settings", json.dumps(settings)]
         stdin.write(prompt.encode())
         stdin.seek(0)
-        trace = open(args.trace, "xb", buffering=0, opener=lambda path, flags: os.open(path, flags, 0o600)) if args.trace else None
-        trace_error = []
-        child = subprocess.Popen(command, stdin=stdin, stdout=subprocess.PIPE, stderr=stderr, cwd=args.cd,
-                                 env=env, pass_fds=(instructions.fileno(),))
+        trace = open(args.trace, "xb", opener=lambda path, flags: os.open(path, flags, 0o600)) if args.trace else None
+        child = None
         try:
-            status, message = completion(args.cli, lines(child.stdout, trace, trace_error))
+            # Its own process group, so an interrupted run can stop the CLI and every tool it started.
+            child = subprocess.Popen(command, stdin=stdin, stdout=subprocess.PIPE, stderr=stderr, cwd=args.cd,
+                                     env=env, pass_fds=(instructions.fileno(),), start_new_session=True)
+            status, message = completion(args.cli, lines(child.stdout, trace))
             child.wait()
         finally:
-            if child.poll() is None:  # interrupted: don't leave the candidate running
-                child.kill()
-                child.wait()
+            if child and child.poll() is None:
+                stop(child)
             if trace:
-                trace.close()
+                with contextlib.suppress(OSError):  # a failed write already raised
+                    trace.close()
         if child.returncode != 0:
             stderr.seek(0)
             detail = message if status else f"Partial answer: {message.strip()}"
             return 1, "\n".join(part for part in (
                 f"{args.cli} exited {child.returncode}", detail, stderr.read().decode(errors="replace").strip()) if part)
-        if trace_error:
-            return 1, f"trace incomplete, {trace_error[0]}; the run itself said: {message.strip()}"
         return status, message
 
 
-def lines(stream, trace, trace_error):
-    # Split on "\n" only: JSON strings may hold other line separators. The trace is unbuffered, so
-    # each line reaches it as it arrives.
+def stop(child):
+    # TERM lets the CLI wind down; KILL then takes whatever in its group is left. That covers
+    # Claude's tools and Codex's native binary, but Codex starts tool commands in their own groups.
+    with contextlib.suppress(ProcessLookupError):
+        os.killpg(child.pid, signal.SIGTERM)
+    with contextlib.suppress(subprocess.TimeoutExpired):
+        child.wait(timeout=5)
+    with contextlib.suppress(ProcessLookupError):
+        os.killpg(child.pid, signal.SIGKILL)
+    child.wait()
+
+
+def lines(stream, trace):
+    # Split on "\n" only: JSON strings may hold other line separators. Each line reaches the trace
+    # as it arrives; a failed write stops the run.
     for line in stream:
-        if trace and not trace_error:
+        if trace:
             try:
                 trace.write(line)
+                trace.flush()
             except OSError as error:
-                trace_error.append(str(error))
+                raise OSError(f"trace write failed: {error}") from error
         yield line.decode(errors="replace")
 
 
