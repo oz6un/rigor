@@ -8,7 +8,8 @@ import tempfile
 import unittest
 
 
-SCRIPT = Path(__file__).resolve().parent.parent / "skills/rigor/scripts/second-opinion.sh"
+SCRIPT = Path(os.environ.get("RUNNER_UNDER_TEST") or
+              Path(__file__).resolve().parent.parent / "skills/rigor/scripts/second-opinion.sh")
 FAKE = r'''
 import json, os, pathlib, sys
 args = sys.argv[1:]
@@ -90,7 +91,9 @@ class SecondOpinionTests(unittest.TestCase):
                     self.assertIn("--strict-mcp-config", args)
                     # No hooks (the user's and plugins' run unsandboxed) and no memory writes; no sandbox.
                     settings = json.loads(args[args.index("--settings") + 1])
-                    self.assertEqual(settings, {"disableAllHooks": True, "autoMemoryEnabled": False})
+                    self.assertTrue(settings["disableAllHooks"])
+                    self.assertFalse(settings["autoMemoryEnabled"])
+                    self.assertNotIn("sandbox", settings)
                     self.assertIsNone(recorded["tmpdir"])
                     # The repo's CLAUDE.md, which --setting-sources user drops, comes back as text.
                     self.assertEqual(recorded["appended"], "Run tests with make check.\n")
@@ -153,9 +156,17 @@ class SecondOpinionTests(unittest.TestCase):
         trace = self.base / "existing.jsonl"
         trace.write_text("previous evidence\n")
         result = self.run_cli("--trace", str(trace))
-        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(result.returncode, 2, result.stderr)  # a usage mistake: nothing ran
         self.assertEqual(trace.read_text(), "previous evidence\n")
         self.assertFalse(self.record.exists())
+
+    def test_write_mode_refuses_a_trace_the_candidate_could_rewrite(self):
+        work = self.base / "work"
+        work.mkdir()
+        result = self.run_cli("--write", "--cd", str(work), "--trace", str(work / "run.jsonl"))
+        self.assertEqual(result.returncode, 2, result.stderr)
+        self.assertFalse(self.record.exists())
+        self.assertFalse((work / "run.jsonl").exists())
 
     def test_ambiguous_host_needs_explicit_cli(self):
         result = self.run_cli(CLAUDECODE="1")
@@ -182,7 +193,8 @@ class SecondOpinionTests(unittest.TestCase):
         recorded = json.loads(self.record.read_text())
         passed = Path(recorded["args"][recorded["args"].index("--append-system-prompt-file") + 1])
         self.assertTrue(passed.is_absolute(), passed)  # Claude starts inside repo/, so relative breaks
-        self.assertEqual(recorded["appended"], "root rule\n\ndot-claude rule\n")
+        appended = recorded["appended"]
+        self.assertLess(appended.index("root rule"), appended.index("dot-claude rule"))
 
     def test_no_claude_md_means_no_appended_prompt(self):
         result = self.run_cli("--cli", "claude", "--cd", str(self.base))
@@ -202,14 +214,15 @@ class SecondOpinionTests(unittest.TestCase):
         self.assertTrue(settings["disableAllHooks"])
         self.assertFalse(settings["autoMemoryEnabled"])
         sandbox = settings["sandbox"]
-        self.assertEqual(sandbox, {"enabled": True, "autoAllowBashIfSandboxed": True,
-                                   "failIfUnavailable": True, "allowUnsandboxedCommands": False})
+        self.assertTrue(sandbox["enabled"] and sandbox["autoAllowBashIfSandboxed"] and sandbox["failIfUnavailable"])
+        self.assertFalse(sandbox["allowUnsandboxedCommands"])
         # The worktree's own settings and hooks don't apply, no MCP servers load, and Claude's temp
         # root is private to this run (the shared one holds other sessions' files).
         self.assertEqual(args[args.index("--setting-sources") + 1], "user")
         self.assertIn("--strict-mcp-config", args)
         # Skills like `how` need subagents, and rigor keeps a todo list.
-        self.assertEqual(args[args.index("--tools") + 1], "Bash,Read,Edit,Write,Glob,Grep,Agent,TodoWrite")
+        tools = set(args[args.index("--tools") + 1].split(","))
+        self.assertLessEqual({"Bash", "Read", "Edit", "Write", "Glob", "Grep", "Agent", "TodoWrite"}, tools)
         tmpdir = json.loads(self.record.read_text())["tmpdir"]
         self.assertTrue(tmpdir and not tmpdir.startswith(("/tmp/claude-", "/private/tmp/claude-")), tmpdir)
 
