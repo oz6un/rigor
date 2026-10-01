@@ -35,7 +35,7 @@ Skills that run review panels (`interrogate`, `arena`, `architect`, `reflect`, a
 
 To pick the model used for second opinions, set `RIGOR_CODEX_MODEL` or `RIGOR_CLAUDE_MODEL`.
 
-The runner is `skills/rigor/scripts/second-opinion.sh`; run it with `--help` for its options. It reads the prompt from stdin and prints the final answer. If inherited environment variables identify both hosts, pass the target explicitly with `--cli claude` or `--cli codex`.
+The runner is `skills/rigor/scripts/second-opinion.sh`; run it with `--help` for its options. It reads the prompt from stdin and prints the final answer. Stopped with SIGTERM, it interrupts the CLI, which stops the tools it started, and exits 143. If inherited environment variables identify both hosts, pass the target explicitly with `--cli claude` or `--cli codex`.
 
 For a code-writing candidate, use `--write --cd <worktree>`. The candidate can then run commands without approval inside the CLI's sandbox (Codex's workspace sandbox, or Claude Code's, which the runner requires). It's a guardrail, not isolation: commands can read your files and write in the working directory and a temp folder (for Codex, `/tmp` and `$TMPDIR`), and they have no network, not even localhost. Install everything the candidate's tests need beforehand, and keep traces and judge inputs under your home folder. Claude runs load your own settings, not the checked-out repo's (its CLAUDE.md is passed in as text), with no hooks, MCP servers or memory writes. Exit 4 means the run didn't finish (no completion reported, or no answer). An exit of 0 confirms only that it finished, not that the candidate ran or passed its tests; its answer says what it couldn't run.
 

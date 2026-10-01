@@ -4,6 +4,7 @@ import json
 import os
 from pathlib import Path
 import shutil
+import signal
 import subprocess
 import sys
 import tempfile
@@ -13,7 +14,9 @@ def parse_args():
     parser = argparse.ArgumentParser(
         prog="second-opinion",
         description="Run a stdin prompt through the other CLI; print its final answer.",
-        epilog="Exit codes: 0 completed, 1 CLI/output failure, 2 usage, 3 missing CLI, 4 incomplete run (no completion reported, or no answer).")
+        epilog="RIGOR_CODEX_MODEL and RIGOR_CLAUDE_MODEL pick the model. Exit codes: 0 completed, "
+               "1 CLI/output failure, 2 usage, 3 missing CLI, 4 incomplete run (no completion reported, or no answer), "
+               "143 stopped by SIGTERM.")
     parser.add_argument("--cli", choices=("codex", "claude"), help="explicit target CLI")
     parser.add_argument("--write", action="store_true", help="allow edits and sandboxed commands; use a separate worktree")
     parser.add_argument("--cd", type=Path, default=Path.cwd(), help="working directory")
@@ -78,7 +81,7 @@ def run(args):
         return 3, f"{args.cli} not installed; run this seat as a host subagent instead and say so in your report"
     prompt = sys.stdin.read()
     # The answer and log live under the home folder, which neither CLI's sandbox can write, so a
-    # candidate can't rewrite what gets reported. The child's own temp dir is a separate one.
+    # candidate can't rewrite what gets reported.
     home_tmp = Path.home() / ".rigor" / "tmp"
     home_tmp.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="opinion-", dir=home_tmp) as scratch, \
@@ -117,12 +120,23 @@ def run(args):
                 settings["sandbox"] = {"enabled": True, "autoAllowBashIfSandboxed": True,
                                        "failIfUnavailable": True, "allowUnsandboxedCommands": False}
                 # Claude's sandbox can write its temp root, shared by every session; give it its own.
+                # Keep it short: Claude puts sockets in it, and past macOS's ~104-byte socket path
+                # limit it silently falls back to the shared root.
                 env["CLAUDE_CODE_TMPDIR"] = child_tmp
             command += ["--settings", json.dumps(settings)]
         fd = os.open(trace, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
-        with os.fdopen(fd, "w") as events, log.open("w") as errors:
-            child = subprocess.run(command, input=prompt, text=True, cwd=args.cd,
-                                   env=env, stdout=events, stderr=errors)
+        with os.fdopen(fd, "w") as events, log.open("w") as errors, subprocess.Popen(
+                command, stdin=subprocess.PIPE, text=True, cwd=args.cd, env=env, stdout=events, stderr=errors) as child:
+            try:
+                child.communicate(prompt)
+            except BaseException:
+                # Interrupt it the way Ctrl-C would: both CLIs then stop the tools they started.
+                child.send_signal(signal.SIGINT)
+                try:
+                    child.wait(timeout=10)
+                except subprocess.TimeoutExpired:
+                    child.kill()
+                raise
         try:
             status, message = completion(args.cli, trace, answer)
         except json.JSONDecodeError as error:
@@ -137,6 +151,8 @@ def run(args):
 
 
 def main():
+    # On SIGTERM, unwind like Ctrl-C: run() interrupts the CLI and the temp folders are removed.
+    signal.signal(signal.SIGTERM, lambda *_: sys.exit(143))
     args = parse_args()
     try:
         status, message = run(args)
