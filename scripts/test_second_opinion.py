@@ -225,6 +225,9 @@ class SecondOpinionTests(unittest.TestCase):
         self.assertLessEqual({"Bash", "Read", "Edit", "Write", "Glob", "Grep", "Agent", "TodoWrite"}, tools)
         tmpdir = json.loads(self.record.read_text())["tmpdir"]
         self.assertTrue(tmpdir and not tmpdir.startswith(("/tmp/claude-", "/private/tmp/claude-")), tmpdir)
+        # Claude puts Unix sockets in it; past macOS's ~104-byte socket path limit it silently falls
+        # back to the shared root. Live: a 74-char /var/folders path fell back, /tmp/rc-xxxxxxxx didn't.
+        self.assertTrue(tmpdir.startswith(("/tmp/", "/private/tmp/")) and len(tmpdir) <= 32, tmpdir)
 
     def test_missing_cli_retains_fallback_status(self):
         (self.bin / "claude").unlink()
