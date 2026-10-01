@@ -5,11 +5,11 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 
 
-SCRIPT = Path(os.environ.get("RUNNER_UNDER_TEST") or
-              Path(__file__).resolve().parent.parent / "skills/rigor/scripts/second-opinion.sh")
+SCRIPT = Path(__file__).resolve().parent.parent / "skills/rigor/scripts/second-opinion.sh"
 FAKE = r'''
 import json, os, pathlib, sys
 args = sys.argv[1:]
@@ -41,6 +41,12 @@ if mode == "malformed_failure":
     sys.exit(9)
 if mode == "malformed":
     print("not json")
+elif mode == "separators":  # valid JSON can carry these unescaped
+    events[-1]["result"] = events[-1].get("result") and "line\u2028one\x85two"
+    for event in events: print(json.dumps(event, ensure_ascii=False))
+elif mode == "slow":
+    print(json.dumps(events[0]), flush=True)
+    import time; time.sleep(30)
 else:
     for event in events: print(json.dumps(event))
 if mode == "nonzero":
@@ -57,7 +63,7 @@ class SecondOpinionTests(unittest.TestCase):
         self.base = Path(self.scratch.name)
         self.bin = self.base / "bin"
         self.bin.mkdir()
-        for name, target in (("python3", sys.executable), ("bash", shutil.which("bash")), ("dirname", shutil.which("dirname"))):
+        for name, target in (("python3", sys.executable),):
             (self.bin / name).symlink_to(target)
         for cli in ("claude", "codex"):
             executable = self.bin / cli
@@ -91,9 +97,7 @@ class SecondOpinionTests(unittest.TestCase):
                     self.assertIn("--strict-mcp-config", args)
                     # No hooks (the user's and plugins' run unsandboxed) and no memory writes; no sandbox.
                     settings = json.loads(args[args.index("--settings") + 1])
-                    self.assertTrue(settings["disableAllHooks"])
-                    self.assertFalse(settings["autoMemoryEnabled"])
-                    self.assertNotIn("sandbox", settings)
+                    self.assertEqual(settings, {"disableAllHooks": True, "autoMemoryEnabled": False})
                     self.assertIsNone(recorded["tmpdir"])
                     # The repo's CLAUDE.md, which --setting-sources user drops, comes back as text.
                     self.assertEqual(recorded["appended"], "Run tests with make check.\n")
@@ -160,13 +164,37 @@ class SecondOpinionTests(unittest.TestCase):
         self.assertEqual(trace.read_text(), "previous evidence\n")
         self.assertFalse(self.record.exists())
 
-    def test_write_mode_refuses_a_trace_the_candidate_could_rewrite(self):
+    def test_write_mode_keeps_the_trace_where_the_candidate_cant_write(self):
+        # Neither sandbox can write the home folder outside --cd; Codex can write all of /tmp.
         work = self.base / "work"
         work.mkdir()
-        result = self.run_cli("--write", "--cd", str(work), "--trace", str(work / "run.jsonl"))
-        self.assertEqual(result.returncode, 2, result.stderr)
-        self.assertFalse(self.record.exists())
-        self.assertFalse((work / "run.jsonl").exists())
+        outside_home = Path(tempfile.mkdtemp(dir="/tmp"))
+        self.addCleanup(shutil.rmtree, outside_home)
+        for trace in (work / "run.jsonl", outside_home / "run.jsonl"):
+            with self.subTest(trace=trace):
+                result = self.run_cli("--write", "--cd", str(work), "--trace", str(trace))
+                self.assertEqual(result.returncode, 2, result.stderr)
+                self.assertFalse(self.record.exists())
+                self.assertFalse(trace.exists())
+        result = self.run_cli("--write", "--cd", str(work), "--trace", str(self.base / "run.jsonl"))
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_unicode_line_separators_inside_events_are_not_line_breaks(self):
+        for cli in ("claude", "codex"):
+            with self.subTest(cli=cli):
+                result = self.run_cli("--cli", cli, RESPONSE="separators")
+                self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_a_killed_run_keeps_the_events_it_already_received(self):
+        trace = self.base / "killed.jsonl"
+        child = subprocess.Popen([str(SCRIPT), "--cli", "claude", "--trace", str(trace)], stdin=subprocess.PIPE,
+                                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, env={**self.env, "RESPONSE": "slow"})
+        child.stdin.write(b"review this\n"); child.stdin.close()
+        deadline = time.time() + 10
+        while time.time() < deadline and not (trace.exists() and trace.stat().st_size):
+            time.sleep(0.1)
+        child.terminate(); child.wait()
+        self.assertIn('"type": "assistant"', trace.read_text())
 
     def test_ambiguous_host_needs_explicit_cli(self):
         result = self.run_cli(CLAUDECODE="1")
@@ -193,8 +221,7 @@ class SecondOpinionTests(unittest.TestCase):
         recorded = json.loads(self.record.read_text())
         passed = Path(recorded["args"][recorded["args"].index("--append-system-prompt-file") + 1])
         self.assertTrue(passed.is_absolute(), passed)  # Claude starts inside repo/, so relative breaks
-        appended = recorded["appended"]
-        self.assertLess(appended.index("root rule"), appended.index("dot-claude rule"))
+        self.assertEqual(recorded["appended"], "root rule\n\ndot-claude rule\n")
 
     def test_no_claude_md_means_no_appended_prompt(self):
         result = self.run_cli("--cli", "claude", "--cd", str(self.base))
@@ -214,15 +241,14 @@ class SecondOpinionTests(unittest.TestCase):
         self.assertTrue(settings["disableAllHooks"])
         self.assertFalse(settings["autoMemoryEnabled"])
         sandbox = settings["sandbox"]
-        self.assertTrue(sandbox["enabled"] and sandbox["autoAllowBashIfSandboxed"] and sandbox["failIfUnavailable"])
-        self.assertFalse(sandbox["allowUnsandboxedCommands"])
+        self.assertEqual(sandbox, {"enabled": True, "autoAllowBashIfSandboxed": True,
+                                   "failIfUnavailable": True, "allowUnsandboxedCommands": False})
         # The worktree's own settings and hooks don't apply, no MCP servers load, and Claude's temp
         # root is private to this run (the shared one holds other sessions' files).
         self.assertEqual(args[args.index("--setting-sources") + 1], "user")
         self.assertIn("--strict-mcp-config", args)
         # Skills like `how` need subagents, and rigor keeps a todo list.
-        tools = set(args[args.index("--tools") + 1].split(","))
-        self.assertLessEqual({"Bash", "Read", "Edit", "Write", "Glob", "Grep", "Agent", "TodoWrite"}, tools)
+        self.assertEqual(args[args.index("--tools") + 1], "Bash,Read,Edit,Write,Glob,Grep,Agent,TodoWrite")
         tmpdir = json.loads(self.record.read_text())["tmpdir"]
         self.assertTrue(tmpdir and not tmpdir.startswith(("/tmp/claude-", "/private/tmp/claude-")), tmpdir)
         # Claude puts Unix sockets in it; past macOS's ~104-byte socket path limit it silently falls

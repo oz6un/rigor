@@ -39,7 +39,7 @@ The runner is `skills/rigor/scripts/second-opinion.sh`; run it with `--help` for
 
 For a code-writing candidate, use `--write --cd <worktree>`. The candidate can then run commands without approval inside the CLI's sandbox (Codex's workspace sandbox, or Claude Code's, which the runner requires). It's a guardrail, not isolation: commands can read your files and write in the working directory and a temp folder (for Codex, `/tmp` and `$TMPDIR`), and they have no network, not even localhost. Install everything the candidate's tests need beforehand, and keep traces and judge inputs under your home folder. Claude runs load your own settings, not the checked-out repo's (its CLAUDE.md is passed in as text), with no hooks, MCP servers or memory writes. Exit 4 means the run didn't finish (no completion reported, or no answer). An exit of 0 confirms only that it finished, not that the candidate ran or passed its tests; its answer says what it couldn't run.
 
-For evaluations, add `--trace <artifact-dir>/run.jsonl` to capture tool events and the outcome. The artifact directory must exist. Use a new path for every run, outside the candidate's workspace; the runner refuses to overwrite an existing file and retains partial traces on failure. Native CLI session persistence stays disabled.
+For evaluations, add `--trace <artifact-dir>/run.jsonl` to capture tool events and the outcome. The artifact directory must exist. Use a new path for every run. With `--write`, it must be under your home folder and outside the candidate's workspace, where neither CLI's sandbox can write; the runner refuses other paths, refuses to overwrite an existing file, and retains partial traces on failure. Native CLI session persistence stays disabled.
 
 ## Usage
 

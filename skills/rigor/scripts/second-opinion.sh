@@ -33,33 +33,36 @@ def parse_args():
     if sys.stdin.isatty():
         parser.error("pipe the prompt on stdin")
     if args.trace is not None:
-        if args.trace.exists():
+        if os.path.lexists(args.trace):
             parser.error(f"trace already exists, never overwritten: {args.trace}")
-        if args.write and args.trace.resolve().is_relative_to(args.cd.resolve()):
-            parser.error("with --write, --trace must be outside --cd, where the target can't rewrite it")
+        # Neither CLI's sandbox can write the home folder outside --cd; Codex can write all of /tmp.
+        trace, cd = args.trace.resolve(), args.cd.resolve()
+        if args.write and (cd in trace.parents or Path.home().resolve() not in trace.parents):
+            parser.error("with --write, --trace must be under your home folder and outside --cd")
     return args
 
 
-def completion(cli, events, answer):
+def completion(cli, trace, answer):
     result = None
     terminal = None
     problem = ""
-    for line in events.splitlines():
-        if not line.strip():
-            continue
-        event = json.loads(line)
-        if not isinstance(event, dict):
-            raise ValueError("expected JSON event objects")
-        if cli == "claude" and event.get("type") == "result":
-            result = event
-        if cli == "codex":
-            if event.get("type") in ("turn.completed", "turn.failed"):
-                terminal = event["type"]
-            if event.get("type") == "turn.failed":
-                error = event.get("error")
-                problem = str(error.get("message", "")) if isinstance(error, dict) else str(error)
-            elif event.get("type") == "error":
-                problem = str(event.get("message", ""))
+    with trace.open() as events:
+        for line in events:
+            if not line.strip():
+                continue
+            event = json.loads(line)
+            if not isinstance(event, dict):
+                raise ValueError("expected JSON event objects")
+            if cli == "claude" and event.get("type") == "result":
+                result = event
+            if cli == "codex":
+                if event.get("type") in ("turn.completed", "turn.failed"):
+                    terminal = event["type"]
+                if event.get("type") == "turn.failed":
+                    error = event.get("error")
+                    problem = str(error.get("message", "")) if isinstance(error, dict) else str(error)
+                elif event.get("type") == "error":
+                    problem = str(event.get("message", ""))
     if cli == "codex":
         if terminal == "turn.failed":
             return 1, f"Codex reported a failed run: {problem}"
@@ -84,13 +87,15 @@ def run(args):
     if executable is None:
         return 3, f"{args.cli} not installed; run this seat as a host subagent instead and say so in your report"
     prompt = sys.stdin.read()
-    # Files a CLI must write for us (Codex's answer, Claude's instructions) live under the home
-    # folder, which neither CLI's sandbox can write, so a candidate can't rewrite what gets reported.
+    # The answer, event stream and log live under the home folder, which neither CLI's sandbox can
+    # write, so a candidate can't rewrite what gets reported.
     home_tmp = Path.home() / ".rigor" / "tmp"
     home_tmp.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="opinion-", dir=home_tmp) as scratch, contextlib.ExitStack() as cleanup:
         env = {**os.environ, "RIGOR_NESTED": "1"}
         answer = Path(scratch) / "answer.txt"
+        trace = args.trace if args.trace is not None else Path(scratch) / "events.jsonl"
+        log = Path(scratch) / "stderr.txt"
         if args.cli == "codex":
             command = [executable, "exec", "-s", "workspace-write" if args.write else "read-only",
                        "-C", str(args.cd.resolve()), "--skip-git-repo-check", "--ephemeral", "--json", "-o", str(answer)]
@@ -125,13 +130,13 @@ def run(args):
                 # path limit it silently falls back to the shared root.
                 env["CLAUDE_CODE_TMPDIR"] = cleanup.enter_context(tempfile.TemporaryDirectory(prefix="rc-", dir="/tmp"))
             command += ["--settings", json.dumps(settings)]
-        trace = os.fdopen(os.open(args.trace, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600), "w") if args.trace else None
-        child = subprocess.run(command, input=prompt, text=True, cwd=args.cd, env=env, capture_output=True)
-        if trace:
-            with trace:
-                trace.write(child.stdout)
+        # Events stream to the file as they arrive, so a killed run keeps what it already received.
+        fd = os.open(trace, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        with os.fdopen(fd, "w") as events, log.open("w") as errors:
+            child = subprocess.run(command, input=prompt, text=True, cwd=args.cd,
+                                   env=env, stdout=events, stderr=errors)
         try:
-            status, message = completion(args.cli, child.stdout, answer)
+            status, message = completion(args.cli, trace, answer)
         except json.JSONDecodeError as error:
             status, message = 1, f"invalid event JSON: {error}\n{error.doc[:2000]}"
         except (OSError, ValueError) as error:
@@ -139,7 +144,7 @@ def run(args):
         if child.returncode != 0:
             detail = message if status else f"Partial answer: {message.strip()}"
             return 1, "\n".join(part for part in (
-                f"{args.cli} exited {child.returncode}", detail, child.stderr.strip()) if part)
+                f"{args.cli} exited {child.returncode}", detail, log.read_text().strip()) if part)
         return status, message
 
 
