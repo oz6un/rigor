@@ -42,11 +42,10 @@ if mode == "malformed_failure":
 if mode == "malformed":
     print("not json")
 elif mode == "separators":  # valid JSON can carry these unescaped
-    events[-1]["result"] = events[-1].get("result") and "line\u2028one\x85two"
-    for event in events: print(json.dumps(event, ensure_ascii=False))
+    for event in events: print(json.dumps({**event, "note": "line\u2028one\x85two"}, ensure_ascii=False))
 elif mode == "slow":
     print(json.dumps(events[0]), flush=True)
-    import time; time.sleep(30)
+    import time; time.sleep(5)
 else:
     for event in events: print(json.dumps(event))
 if mode == "nonzero":
@@ -63,7 +62,7 @@ class SecondOpinionTests(unittest.TestCase):
         self.base = Path(self.scratch.name)
         self.bin = self.base / "bin"
         self.bin.mkdir()
-        for name, target in (("python3", sys.executable),):
+        for name, target in (("python3", sys.executable), ("bash", shutil.which("bash")), ("dirname", shutil.which("dirname"))):
             (self.bin / name).symlink_to(target)
         for cli in ("claude", "codex"):
             executable = self.bin / cli
@@ -163,21 +162,33 @@ class SecondOpinionTests(unittest.TestCase):
         self.assertEqual(result.returncode, 2, result.stderr)  # a usage mistake: nothing ran
         self.assertEqual(trace.read_text(), "previous evidence\n")
         self.assertFalse(self.record.exists())
+        dangling = self.base / "dangling.jsonl"
+        dangling.symlink_to(self.base / "missing")
+        self.assertEqual(self.run_cli("--trace", str(dangling)).returncode, 2)
+        self.assertEqual(self.run_cli("--trace", str(self.base / "missing" / "run.jsonl")).returncode, 2)
 
     def test_write_mode_keeps_the_trace_where_the_candidate_cant_write(self):
-        # Neither sandbox can write the home folder outside --cd; Codex can write all of /tmp.
-        work = self.base / "work"
-        work.mkdir()
+        # Neither sandbox can write the home folder outside --cd; Codex can write /tmp and $TMPDIR.
+        work, home_tmp = self.base / "work", self.base / "tmp"
+        work.mkdir(); home_tmp.mkdir()
         outside_home = Path(tempfile.mkdtemp(dir="/tmp"))
         self.addCleanup(shutil.rmtree, outside_home)
-        for trace in (work / "run.jsonl", outside_home / "run.jsonl"):
-            with self.subTest(trace=trace):
-                result = self.run_cli("--write", "--cd", str(work), "--trace", str(trace))
+        for trace, tmpdir in ((work / "run.jsonl", outside_home), (outside_home / "run.jsonl", outside_home),
+                              (home_tmp / "run.jsonl", home_tmp)):
+            with self.subTest(trace=trace, tmpdir=tmpdir):
+                result = self.run_cli("--write", "--cd", str(work), "--trace", str(trace), TMPDIR=str(tmpdir))
                 self.assertEqual(result.returncode, 2, result.stderr)
                 self.assertFalse(self.record.exists())
                 self.assertFalse(trace.exists())
-        result = self.run_cli("--write", "--cd", str(work), "--trace", str(self.base / "run.jsonl"))
+        result = self.run_cli("--write", "--cd", str(work), "--trace", str(self.base / "run.jsonl"), TMPDIR=str(outside_home))
         self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_a_home_inside_tmp_gives_no_safe_trace(self):
+        home = Path(tempfile.mkdtemp(dir="/tmp"))
+        self.addCleanup(shutil.rmtree, home)
+        result = self.run_cli("--write", "--cd", str(self.base), "--trace", str(home / "run.jsonl"),
+                              HOME=str(home), TMPDIR=str(self.base / "bin"))
+        self.assertEqual(result.returncode, 2, result.stderr)
 
     def test_unicode_line_separators_inside_events_are_not_line_breaks(self):
         for cli in ("claude", "codex"):
@@ -195,6 +206,7 @@ class SecondOpinionTests(unittest.TestCase):
             time.sleep(0.1)
         child.terminate(); child.wait()
         self.assertIn('"type": "assistant"', trace.read_text())
+        time.sleep(5)  # let the orphaned fake CLI exit
 
     def test_ambiguous_host_needs_explicit_cli(self):
         result = self.run_cli(CLAUDECODE="1")
