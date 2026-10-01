@@ -89,6 +89,7 @@ See [docs/guide](docs/guide/README.md) for a longer walkthrough.
 | Trace forensics | Diagnose a captured profile or trace |
 | Feature | New or changed behavior, built from a named data shape |
 | Refactoring | Structure changes that preserve behavior |
+| Redesign | Rethink a subsystem from scratch: extract what it knows, design without seeing how it does it |
 | Prototype | A throwaway sketch to settle a design question |
 | Visual parity | Pixel-exact match between two UI implementations |
 | Authoring a skill | Writing or editing a `SKILL.md` |
