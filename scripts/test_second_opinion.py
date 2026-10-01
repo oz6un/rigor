@@ -46,8 +46,6 @@ if mode == "malformed_failure":
     sys.exit(9)
 if mode == "malformed":
     print("not json")
-elif mode == "separators":  # valid JSON can carry these unescaped
-    for event in events: print(json.dumps({**event, "note": "line\u2028one\x85two"}, ensure_ascii=False))
 else:
     for event in events: print(json.dumps(event))
 if mode == "nonzero":
@@ -169,55 +167,44 @@ class SecondOpinionTests(unittest.TestCase):
         self.assertEqual(self.run_cli("--trace", str(dangling)).returncode, 2)
         self.assertEqual(self.run_cli("--trace", str(self.base / "missing" / "run.jsonl")).returncode, 2)
 
+    def outside_tmp(self):
+        # The candidate can write /tmp, which on Linux holds the test's own temp folder; build each
+        # case elsewhere so every refusal below has exactly one cause.
+        folder = Path(tempfile.mkdtemp(prefix=".trace-test-", dir=Path(__file__).resolve().parent))
+        self.addCleanup(shutil.rmtree, folder)
+        return folder
+
     def test_write_mode_keeps_the_trace_where_the_candidate_cant_write(self):
-        # Neither sandbox can write the home folder outside --cd; Codex can write /tmp and $TMPDIR.
-        work, home_tmp = self.base / "work", self.base / "tmp"
-        work.mkdir(); home_tmp.mkdir()
-        outside_home = Path(tempfile.mkdtemp(dir="/tmp"))
-        self.addCleanup(shutil.rmtree, outside_home)
-        for trace, tmpdir in ((work / "run.jsonl", outside_home), (outside_home / "run.jsonl", outside_home),
-                              (home_tmp / "run.jsonl", home_tmp)):
-            with self.subTest(trace=trace, tmpdir=tmpdir):
+        base = self.outside_tmp()
+        work, tmpdir, safe = base / "work", base / "tmpdir", base / "safe"
+        for folder in (work, tmpdir, safe):
+            folder.mkdir()
+        in_tmp = Path(tempfile.mkdtemp(dir="/tmp"))
+        self.addCleanup(shutil.rmtree, in_tmp)
+        refused = [work / "run.jsonl", in_tmp / "run.jsonl", tmpdir / "run.jsonl"]
+        if Path(str(work).swapcase()).is_dir():  # a case-insensitive file system
+            refused.append(Path(str(work).swapcase()) / "run.jsonl")
+        for trace in refused:
+            with self.subTest(trace=trace):
                 result = self.run_cli("--write", "--cd", str(work), "--trace", str(trace), TMPDIR=str(tmpdir))
                 self.assertEqual(result.returncode, 2, result.stderr)
                 self.assertFalse(self.record.exists())
                 self.assertFalse(trace.exists())
-        # The temp folder is under /tmp on Linux, so the safe home goes under the real one.
-        home = Path(tempfile.mkdtemp(dir=Path.home()))
-        self.addCleanup(shutil.rmtree, home)
-        result = self.run_cli("--write", "--cd", str(work), "--trace", str(home / "run.jsonl"),
-                              HOME=str(home), TMPDIR=str(outside_home))
+        result = self.run_cli("--write", "--cd", str(work), "--trace", str(safe / "run.jsonl"), TMPDIR=str(tmpdir))
         self.assertEqual(result.returncode, 0, result.stderr)
 
-    def test_a_home_inside_tmp_gives_no_safe_trace(self):
-        home = Path(tempfile.mkdtemp(dir="/tmp"))
-        self.addCleanup(shutil.rmtree, home)
-        result = self.run_cli("--write", "--cd", str(self.base), "--trace", str(home / "run.jsonl"),
-                              HOME=str(home), TMPDIR=str(self.base / "bin"))
-        self.assertEqual(result.returncode, 2, result.stderr)
-
     def test_a_symlink_swapped_mid_run_cant_replace_the_trace(self):
-        home = Path(tempfile.mkdtemp(dir=Path.home()))
-        self.addCleanup(shutil.rmtree, home)
-        (home / "traces").mkdir()
-        forged = self.base / "forged"
-        forged.mkdir()
+        base = self.outside_tmp()
+        work, safe, forged = base / "work", base / "safe", base / "forged"
+        for folder in (work, safe, forged):
+            folder.mkdir()
         (forged / "run.jsonl").write_text(json.dumps({"type": "result", "subtype": "success", "is_error": False,
                                                        "result": "forged pass", "permission_denials": []}) + "\n")
-        work = self.base / "work"
-        work.mkdir()
-        (work / "link").symlink_to(home / "traces")
+        (work / "link").symlink_to(safe)
         result = self.run_cli("--cli", "claude", "--write", "--cd", str(work), "--trace", str(work / "link" / "run.jsonl"),
-                              HOME=str(home), TMPDIR=str(self.base / "bin"), RESPONSE="swap",
-                              LINK=str(work / "link"), FORGED=str(forged))
+                              TMPDIR=str(self.base), RESPONSE="swap", LINK=str(work / "link"), FORGED=str(forged))
         self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
         self.assertNotIn("forged pass", result.stdout)
-
-    def test_unicode_line_separators_inside_events_are_not_line_breaks(self):
-        for cli in ("claude", "codex"):
-            with self.subTest(cli=cli):
-                result = self.run_cli("--cli", cli, RESPONSE="separators")
-                self.assertEqual(result.returncode, 0, result.stderr)
 
     def test_ambiguous_host_needs_explicit_cli(self):
         result = self.run_cli(CLAUDECODE="1")

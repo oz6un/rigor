@@ -13,9 +13,8 @@ def parse_args():
     parser = argparse.ArgumentParser(
         prog="second-opinion",
         description="Run a stdin prompt through the other CLI; print its final answer.",
-        epilog="RIGOR_CODEX_MODEL and RIGOR_CLAUDE_MODEL pick the model. Read-only Claude runs in plan mode "
-               "and may use web lookup tools. Exit codes: 0 completed, 1 CLI/output failure, 2 usage, "
-               "3 missing CLI, 4 incomplete run (no completion reported, or no answer).")
+        epilog="RIGOR_CODEX_MODEL and RIGOR_CLAUDE_MODEL pick the model. Exit codes: 0 completed, "
+               "1 CLI/output failure, 2 usage, 3 missing CLI, 4 incomplete run (no completion reported, or no answer).")
     parser.add_argument("--cli", choices=("codex", "claude"), help="explicit target CLI")
     parser.add_argument("--write", action="store_true", help="allow edits and sandboxed commands; use a separate worktree")
     parser.add_argument("--cd", type=Path, default=Path.cwd(), help="working directory")
@@ -36,14 +35,14 @@ def parse_args():
             parser.error(f"trace already exists, never overwritten: {args.trace}")
         if not args.trace.parent.is_dir():
             parser.error(f"trace folder does not exist: {args.trace.parent}")
-        # With default sandbox settings, neither CLI can write the home folder outside --cd, but
-        # Codex can write /tmp and $TMPDIR, wherever that is.
         # Resolved once and kept, so a symlink the candidate swaps mid-run can't redirect the trace.
-        args.trace = trace = args.trace.resolve()
-        writable = (args.cd, Path("/tmp"), Path(os.environ.get("TMPDIR") or "/tmp"))
-        if args.write and (Path.home().resolve() not in trace.parents or
-                           any(root.resolve() in trace.parents for root in writable)):
-            parser.error("with --write, --trace must be under your home folder, outside --cd, /tmp and $TMPDIR")
+        args.trace = args.trace.resolve()
+        if args.write:
+            # By default the candidate can write --cd, /tmp and $TMPDIR. Folders are compared by
+            # identity, since one folder has several spellings (letter case, macOS firmlinks).
+            roots = [os.stat(p) for p in (args.cd, "/tmp", os.environ.get("TMPDIR") or "/tmp") if os.path.isdir(p)]
+            if any(os.path.samestat(os.stat(folder), root) for folder in args.trace.parents for root in roots):
+                parser.error("with --write, --trace must be outside --cd, /tmp and $TMPDIR, where the candidate can write")
     return args
 
 
