@@ -1,3 +1,4 @@
+import contextlib
 import json
 import os
 import resource
@@ -54,12 +55,13 @@ if mode == "big_last":  # the line that crosses a write limit is the last one
     events[-1]["result"] = "x" * 2000
     for event in events: print(json.dumps(event))
     sys.exit(0)
-if mode == "slow":  # a tool process that ignores SIGTERM, then a long wait
-    import subprocess, time
-    tool = subprocess.Popen([sys.executable, "-c", "import signal, time; signal.signal(signal.SIGTERM, signal.SIG_IGN); time.sleep(30)"])
-    pathlib.Path(os.environ["RECORD"] + ".tool").write_text(str(tool.pid))
+if mode == "slow":  # one event, then a long wait that ignores SIGTERM
+    import signal, time
+    signal.signal(signal.SIGTERM, signal.SIG_IGN)
     print(json.dumps(events[0]), flush=True)
     time.sleep(30)
+if mode == "not_object":
+    print("[1]")
 if mode == "malformed_failure":
     print("Error: not logged in")
     print("auth token expired", file=sys.stderr)
@@ -201,18 +203,20 @@ class SecondOpinionTests(unittest.TestCase):
         (work / "link").symlink_to(safe)
         (safe / "into-tmp").symlink_to(in_tmp)
         (safe / "entry").symlink_to(work / "link")
+        (work / "child").mkdir(); (work / "hop").symlink_to(work / "child")
         refused = [work / "run.jsonl", in_tmp / "run.jsonl", tmpdir / "run.jsonl",
-                   work / "link" / "run.jsonl", safe / "into-tmp" / "run.jsonl", safe / "entry" / "run.jsonl"]
+                   work / "link" / "run.jsonl", safe / "into-tmp" / "run.jsonl", safe / "entry" / "run.jsonl",
+                   work / "hop" / ".." / ".." / "safe" / "run.jsonl"]  # '..' cancelling a symlink
         if Path(str(work).swapcase()).is_dir():  # a case-insensitive file system
             refused.append(Path(str(work).swapcase()) / "run.jsonl")
         for trace in refused:
             with self.subTest(trace=trace):
+                self.record.unlink(missing_ok=True)
                 result = self.run_cli("--write", "--cd", str(work), "--trace", str(trace), TMPDIR=str(tmpdir))
                 self.assertEqual(result.returncode, 2, result.stderr)
                 self.assertFalse(self.record.exists())
                 self.assertFalse(trace.exists())
-        result = self.run_cli("--write", "--cd", str(work), "--trace", str(work / ".." / "safe" / "run.jsonl"),
-                              TMPDIR=str(tmpdir))
+        result = self.run_cli("--write", "--cd", str(work), "--trace", str(safe / "run.jsonl"), TMPDIR=str(tmpdir))
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertTrue((safe / "run.jsonl").exists())
 
@@ -220,26 +224,56 @@ class SecondOpinionTests(unittest.TestCase):
         result = self.run_cli("--cli", "claude", RESPONSE="separators")
         self.assertEqual((result.returncode, result.stdout), (0, "line\u2028one\x85two\n"), result.stderr)
 
-    def test_a_killed_run_keeps_its_events_and_stops_its_child_and_tools(self):
-        trace = self.base / "killed.jsonl"
-        runner = subprocess.Popen([str(SCRIPT), "--cli", "claude", "--write", "--trace", str(trace)], stdin=subprocess.PIPE,
-                                  stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, cwd=self.base / "tmpdir",
-                                  env={**self.env, "RESPONSE": "slow"}, start_new_session=True)
-        self.addCleanup(lambda: runner.poll() is None and os.killpg(runner.pid, signal.SIGKILL))
+    def start_slow_run(self, *args):
+        trace = self.base / "slow.jsonl"
+        runner = subprocess.Popen([str(SCRIPT), "--cli", "claude", "--trace", str(trace), *args], stdin=subprocess.PIPE,
+                                  stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True,
+                                  env={**self.env, "RESPONSE": "slow", "TMPDIR": str(self.base / "tmpdir")})
+        def cleanup():
+            for pid in (runner.pid, *([json.loads(self.record.read_text())["pid"]] if self.record.exists() else [])):
+                with contextlib.suppress(ProcessLookupError):
+                    os.kill(pid, signal.SIGKILL)
+            runner.wait()
+        self.addCleanup(cleanup)
         runner.stdin.write(b"review this\n"); runner.stdin.close()
         for _ in range(100):
             if trace.exists() and trace.stat().st_size:
                 break
             time.sleep(0.1)
         self.assertTrue(trace.stat().st_size)  # readable while the run is still going
-        runner.terminate()
-        self.assertEqual(runner.wait(timeout=15), 143)
-        self.assertEqual(json.loads(trace.read_text())["type"], "assistant")
-        recorded = json.loads(self.record.read_text())
-        for pid in (recorded["pid"], int(Path(str(self.record) + ".tool").read_text())):
-            with self.assertRaises(ProcessLookupError):  # the fake CLI and the tool it started
+        return runner, trace, json.loads(self.record.read_text())
+
+    def assertGone(self, pid):
+        for _ in range(100):
+            try:
                 os.kill(pid, 0)
-        self.assertFalse(Path(recorded["tmpdir"]).exists())
+            except ProcessLookupError:
+                return
+            time.sleep(0.1)
+        self.fail(f"process {pid} still running")
+
+    def test_a_killed_run_keeps_its_events_and_stops_its_cli(self):
+        for signals in (1, 2):  # a second TERM during cleanup mustn't cut it short
+            with self.subTest(signals=signals):
+                self.record.unlink(missing_ok=True)
+                (self.base / "slow.jsonl").unlink(missing_ok=True)
+                runner, trace, recorded = self.start_slow_run("--write", "--cd", str(self.base / "tmpdir"))
+                for _ in range(signals):
+                    runner.terminate()
+                    time.sleep(1)
+                self.assertEqual(runner.wait(timeout=15), 143)
+                self.assertEqual(json.loads(trace.read_text())["type"], "assistant")
+                self.assertGone(recorded["pid"])  # it ignored TERM, so this took the KILL
+                self.assertFalse(Path(recorded["tmpdir"]).exists())
+
+    def test_a_host_killing_the_runners_group_stops_the_cli_too(self):
+        runner, trace, recorded = self.start_slow_run()
+        os.killpg(runner.pid, signal.SIGKILL)
+        runner.wait()
+        self.assertGone(recorded["pid"])
+
+    def test_a_non_object_event_fails_the_run(self):
+        self.assertEqual(self.run_cli("--cli", "claude", RESPONSE="not_object").returncode, 1)
 
     def test_a_bad_line_before_a_long_stream_fails_without_hanging(self):
         trace = self.base / "flood.jsonl"

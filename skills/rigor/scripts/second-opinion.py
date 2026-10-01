@@ -38,11 +38,13 @@ def parse_args():
             parser.error(f"trace already exists, never overwritten: {args.trace}")
         if not args.trace.parent.is_dir():
             parser.error(f"trace folder does not exist: {args.trace.parent}")
-        # A symlink on the way could be re-pointed by the candidate, redirecting later readers.
-        real = args.trace.parent.resolve()
-        if args.write and (real != Path(os.path.abspath(args.trace.parent)) or writable_by_candidate(real, args.cd)):
-            parser.error(f"with --write, --trace must be a real path (no symlinks; this folder is {real}) "
-                         "outside --cd, /tmp and $TMPDIR, where the candidate can write")
+        if args.write:
+            # A symlink on the way could be re-pointed by the candidate, redirecting later readers.
+            real = args.trace.parent.resolve()
+            if args.trace.parent != real:
+                parser.error(f"with --write, give --trace as a real path, without symlinks or '..': {real}")
+            if writable_by_candidate(real, args.cd):
+                parser.error("with --write, --trace must be outside --cd, /tmp and $TMPDIR, where the candidate can write")
     return args
 
 
@@ -153,17 +155,19 @@ def run(args):
         trace = open(args.trace, "xb", opener=lambda path, flags: os.open(path, flags, 0o600)) if args.trace else None
         child = None
         try:
-            # Its own process group, so an interrupted run can stop the CLI and every tool it started.
             child = subprocess.Popen(command, stdin=stdin, stdout=subprocess.PIPE, stderr=stderr, cwd=args.cd,
-                                     env=env, pass_fds=(instructions.fileno(),), start_new_session=True)
+                                     env=env, pass_fds=(instructions.fileno(),))
             status, message = completion(args.cli, lines(child.stdout, trace))
             child.wait()
-        finally:
+            if trace:
+                trace.close()
+        except BaseException:
             if child and child.poll() is None:
                 stop(child)
             if trace:
-                with contextlib.suppress(OSError):  # a failed write already raised
+                with contextlib.suppress(OSError):  # the error being raised already covers it
                     trace.close()
+            raise
         if child.returncode != 0:
             stderr.seek(0)
             detail = message if status else f"Partial answer: {message.strip()}"
@@ -173,14 +177,14 @@ def run(args):
 
 
 def stop(child):
-    # TERM lets the CLI wind down; KILL then takes whatever in its group is left. That covers
-    # Claude's tools and Codex's native binary, but Codex starts tool commands in their own groups.
-    with contextlib.suppress(ProcessLookupError):
-        os.killpg(child.pid, signal.SIGTERM)
+    # TERM lets the CLI stop its own tools (Claude does; Codex leaves the commands it started
+    # running), then KILL if it hasn't exited. A second Ctrl-C or TERM mustn't cut this short.
+    signal.signal(signal.SIGTERM, signal.SIG_IGN)
+    signal.signal(signal.SIGINT, signal.SIG_IGN)
+    child.terminate()
     with contextlib.suppress(subprocess.TimeoutExpired):
         child.wait(timeout=5)
-    with contextlib.suppress(ProcessLookupError):
-        os.killpg(child.pid, signal.SIGKILL)
+    child.kill()
     child.wait()
 
 
