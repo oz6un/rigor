@@ -2,9 +2,11 @@ import json
 import os
 from pathlib import Path
 import shutil
+import signal
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 
 
@@ -16,13 +18,14 @@ cli = pathlib.Path(sys.argv[0]).name
 pathlib.Path(os.environ["RECORD"]).write_text(json.dumps({
     "cli": cli, "args": args, "cwd": os.getcwd(), "prompt": sys.stdin.read(),
     "nested": os.environ.get("RIGOR_NESTED"), "tmpdir": os.environ.get("CLAUDE_CODE_TMPDIR"),
-    "appended": (pathlib.Path(args[args.index("--append-system-prompt-file") + 1]).read_text()
-                 if "--append-system-prompt-file" in args else None)}))
+    "appended": args[args.index("--append-system-prompt") + 1] if "--append-system-prompt" in args else None}))
 mode = os.environ.get("RESPONSE", "success")
 if cli == "codex":
-    pathlib.Path(args[args.index("-o") + 1]).write_text("review complete")
-    events = [{"type": "item.completed", "item": {"type": "command_execution", "command": "python3 check.py", "exit_code": 0}},
+    events = [{"type": "item.completed", "item": {"type": "agent_message", "text": "checking"}},
+              {"type": "item.completed", "item": {"type": "command_execution", "command": "python3 check.py", "exit_code": 0}},
+              {"type": "item.completed", "item": {"type": "agent_message", "text": "review complete"}},
               {"type": "turn.completed", "usage": {}}]
+    if mode == "no_answer": events = [e for e in events if e.get("item", {}).get("type") != "agent_message"]
     if mode == "error": events[-1] = {"type": "turn.failed", "error": {"message": "provider failed"}}
     if mode == "recovered": events.insert(0, {"type": "error", "message": "Reconnecting..."})
 else:
@@ -34,12 +37,13 @@ if mode == "stdout_failure":
     events[-1] = ({"type": "turn.failed", "error": {"message": "provider stdout failure"}} if cli == "codex"
                   else {"type": "result", "subtype": "error_during_execution", "is_error": True, "errors": ["provider stdout failure"]})
 if mode == "missing": events.pop()
-if mode == "swap":  # report failure, then re-point the trace's symlinked folder at a forged success
-    events[-1].update(is_error=True, subtype="error_during_execution")
-    for event in events: print(json.dumps(event), flush=True)
-    link = pathlib.Path(os.environ["LINK"])
-    link.unlink(); link.symlink_to(os.environ["FORGED"])
+if mode == "separators":  # valid JSON may carry these unescaped
+    events[-1]["result"] = "line\u2028one\x85two"
+    for event in events: print(json.dumps(event, ensure_ascii=False))
     sys.exit(0)
+if mode == "slow":
+    print(json.dumps(events[0]), flush=True)
+    import time; time.sleep(30)
 if mode == "malformed_failure":
     print("Error: not logged in")
     print("auth token expired", file=sys.stderr)
@@ -151,12 +155,12 @@ class SecondOpinionTests(unittest.TestCase):
                 result = self.run_cli("--cli", cli, "--trace", str(trace), RESPONSE=response)
                 self.assertEqual(result.returncode, status, result.stderr)
                 events = [json.loads(line) for line in trace.read_text().splitlines()]
-                self.assertEqual(len(events), 2)
+                self.assertEqual(len(events), 2 if cli == "claude" else 4)  # every event the fake printed
                 if cli == "claude":
                     self.assertEqual(events[0]["message"]["content"][0]["name"], "Read")
                     self.assertEqual(events[-1]["type"], "result")
                 else:
-                    self.assertEqual(events[0]["item"]["command"], "python3 check.py")
+                    self.assertEqual(events[1]["item"]["command"], "python3 check.py")
                 self.assertEqual(trace.stat().st_mode & 0o777, 0o600)
 
     def test_existing_trace_is_never_overwritten(self):
@@ -176,7 +180,10 @@ class SecondOpinionTests(unittest.TestCase):
         work.mkdir(); safe.mkdir()
         in_tmp = Path(tempfile.mkdtemp(dir="/tmp"))
         self.addCleanup(shutil.rmtree, in_tmp)
-        refused = [work / "run.jsonl", in_tmp / "run.jsonl", tmpdir / "run.jsonl"]
+        (work / "link").symlink_to(safe)  # a folder the candidate can re-point
+        (safe / "into-tmp").symlink_to(in_tmp)
+        refused = [work / "run.jsonl", in_tmp / "run.jsonl", tmpdir / "run.jsonl",
+                   work / "link" / "run.jsonl", safe / "into-tmp" / "run.jsonl"]
         if Path(str(work).swapcase()).is_dir():  # a case-insensitive file system
             refused.append(Path(str(work).swapcase()) / "run.jsonl")
         for trace in refused:
@@ -188,22 +195,29 @@ class SecondOpinionTests(unittest.TestCase):
         result = self.run_cli("--write", "--cd", str(work), "--trace", str(safe / "run.jsonl"))
         self.assertEqual(result.returncode, 0, result.stderr)
 
-    def test_write_mode_refuses_a_cd_containing_the_runners_scratch(self):
-        result = self.run_cli("--write", "--cd", str(self.base))  # HOME is self.base
-        self.assertEqual(result.returncode, 2, result.stderr)
-        self.assertFalse(self.record.exists())
+    def test_events_split_only_on_newlines(self):
+        result = self.run_cli("--cli", "claude", RESPONSE="separators")
+        self.assertEqual((result.returncode, result.stdout), (0, "line\u2028one\x85two\n"), result.stderr)
 
-    def test_a_symlink_swapped_mid_run_cant_replace_the_trace(self):
-        work, safe, forged = self.base / "work", self.base / "safe", self.base / "forged"
-        for folder in (work, safe, forged):
-            folder.mkdir()
-        (forged / "run.jsonl").write_text(json.dumps({"type": "result", "subtype": "success", "is_error": False,
-                                                       "result": "forged pass", "permission_denials": []}) + "\n")
-        (work / "link").symlink_to(safe)
-        result = self.run_cli("--cli", "claude", "--write", "--cd", str(work), "--trace", str(work / "link" / "run.jsonl"),
-                              RESPONSE="swap", LINK=str(work / "link"), FORGED=str(forged))
-        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
-        self.assertNotIn("forged pass", result.stdout)
+    def test_a_killed_run_keeps_the_events_it_already_received(self):
+        trace = self.base / "killed.jsonl"
+        runner = subprocess.Popen([str(SCRIPT), "--cli", "claude", "--trace", str(trace)], stdin=subprocess.PIPE,
+                                  stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                                  env={**self.env, "RESPONSE": "slow"}, start_new_session=True)
+        runner.stdin.write(b"review this\n"); runner.stdin.close()
+        for _ in range(100):
+            if trace.exists() and trace.stat().st_size:
+                break
+            time.sleep(0.1)
+        os.killpg(runner.pid, signal.SIGTERM)  # the runner and the fake CLI with it
+        runner.wait()
+        self.assertEqual(json.loads(trace.read_text())["type"], "assistant")
+
+    def test_codex_answer_is_its_last_message_and_none_is_incomplete(self):
+        result = self.run_cli("--cli", "codex")
+        self.assertEqual((result.returncode, result.stdout), (0, "review complete\n"), result.stderr)
+        result = self.run_cli("--cli", "codex", RESPONSE="no_answer")
+        self.assertEqual(result.returncode, 4, result.stderr)
 
     def test_ambiguous_host_needs_explicit_cli(self):
         result = self.run_cli(CLAUDECODE="1")
@@ -228,14 +242,12 @@ class SecondOpinionTests(unittest.TestCase):
                                 text=True, capture_output=True, cwd=self.base, env=self.env)
         self.assertEqual(result.returncode, 0, result.stderr)
         recorded = json.loads(self.record.read_text())
-        passed = Path(recorded["args"][recorded["args"].index("--append-system-prompt-file") + 1])
-        self.assertTrue(passed.is_absolute(), passed)  # Claude starts inside repo/, so relative breaks
         self.assertEqual(recorded["appended"], "root rule\n\ndot-claude rule\n")
 
     def test_no_claude_md_means_no_appended_prompt(self):
         result = self.run_cli("--cli", "claude", "--cd", str(self.base))
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertNotIn("--append-system-prompt-file", json.loads(self.record.read_text())["args"])
+        self.assertNotIn("--append-system-prompt", json.loads(self.record.read_text())["args"])
 
     def test_claude_write_runs_commands_only_inside_a_required_sandbox(self):
         # A candidate can run its tests, but only sandboxed: no fallback when the sandbox can't

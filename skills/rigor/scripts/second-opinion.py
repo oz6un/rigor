@@ -8,9 +8,6 @@ import subprocess
 import sys
 import tempfile
 
-SCRATCH = Path.home() / ".rigor" / "tmp"
-
-
 def parse_args():
     parser = argparse.ArgumentParser(
         prog="second-opinion",
@@ -33,53 +30,54 @@ def parse_args():
     if sys.stdin.isatty():
         parser.error("pipe the prompt on stdin")
     if args.trace is not None:
+        args.trace = args.trace.absolute()
         if os.path.lexists(args.trace):
             parser.error(f"trace already exists, never overwritten: {args.trace}")
         if not args.trace.parent.is_dir():
             parser.error(f"trace folder does not exist: {args.trace.parent}")
-        # Resolved once and kept, so a symlink the candidate swaps mid-run can't redirect the trace.
-        args.trace = args.trace.resolve()
-    if args.write:
-        # By default the candidate can write --cd, /tmp and $TMPDIR. Folders are compared by
-        # identity, since one folder has several spellings (letter case, macOS firmlinks).
-        roots = [os.stat(p) for p in (args.cd, "/tmp", os.environ.get("TMPDIR") or "/tmp") if os.path.isdir(p)]
-        def writable(path):
-            return any(os.path.samestat(os.stat(folder), root)
-                       for folder in path.parents if folder.exists() for root in roots)
-        if writable(SCRATCH / "x"):
-            parser.error(f"with --write, --cd must not contain {SCRATCH}, where the runner keeps what it reports")
-        if args.trace is not None and writable(args.trace):
+        if args.write and writable_by_candidate(args.trace, args.cd):
             parser.error("with --write, --trace must be outside --cd, /tmp and $TMPDIR, where the candidate can write")
     return args
 
 
-def completion(cli, trace, answer):
+def writable_by_candidate(trace, cd):
+    # By default a write candidate can write --cd, /tmp and $TMPDIR. A trace there, or reached
+    # through a folder there, could be rewritten before anyone reads it. Folders are compared by
+    # identity, since one folder has several spellings (letter case, symlinks, macOS firmlinks).
+    roots = [os.stat(p) for p in (cd, "/tmp", os.environ.get("TMPDIR") or "/tmp") if os.path.isdir(p)]
+    folders = [*trace.parents, *trace.resolve().parents]
+    return any(os.path.samestat(os.stat(folder), root) for folder in folders for root in roots)
+
+
+def completion(cli, events):
     result = None
     terminal = None
     problem = ""
-    with trace.open() as events:
-        for line in events:
-            if not line.strip():
-                continue
-            event = json.loads(line)
-            if not isinstance(event, dict):
-                raise ValueError("expected JSON event objects")
-            if cli == "claude" and event.get("type") == "result":
-                result = event
-            if cli == "codex":
-                if event.get("type") in ("turn.completed", "turn.failed"):
-                    terminal = event["type"]
-                if event.get("type") == "turn.failed":
-                    error = event.get("error")
-                    problem = str(error.get("message", "")) if isinstance(error, dict) else str(error)
-                elif event.get("type") == "error":
-                    problem = str(event.get("message", ""))
+    text = ""
+    for line in events:
+        if not line.strip():
+            continue
+        event = json.loads(line)
+        if not isinstance(event, dict):
+            raise ValueError("expected JSON event objects")
+        if cli == "claude" and event.get("type") == "result":
+            result = event
+        if cli == "codex":
+            item = event.get("item")
+            if event.get("type") == "item.completed" and isinstance(item, dict) and item.get("type") == "agent_message":
+                text = item.get("text")
+            if event.get("type") in ("turn.completed", "turn.failed"):
+                terminal = event["type"]
+            if event.get("type") == "turn.failed":
+                error = event.get("error")
+                problem = str(error.get("message", "")) if isinstance(error, dict) else str(error)
+            elif event.get("type") == "error":
+                problem = str(event.get("message", ""))
     if cli == "codex":
         if terminal == "turn.failed":
             return 1, f"Codex reported a failed run: {problem}"
         if terminal != "turn.completed":
             return 4, "Codex did not report completion" + (f": {problem}" if problem else "")
-        text = answer.read_text() if answer.exists() else ""
     else:
         if result is None:
             return 4, "Claude did not report completion"
@@ -98,18 +96,14 @@ def run(args):
     if executable is None:
         return 3, f"{args.cli} not installed; run this seat as a host subagent instead and say so in your report"
     prompt = sys.stdin.read()
-    # The answer and log live where neither CLI's sandbox can write (parse_args refuses a --cd that
-    # contains it), so a candidate can't rewrite what gets reported.
-    SCRATCH.mkdir(parents=True, exist_ok=True)
-    with tempfile.TemporaryDirectory(prefix="opinion-", dir=SCRATCH) as scratch, \
-            tempfile.TemporaryDirectory(prefix="rc-", dir="/tmp") as child_tmp:
+    # The verdict and answer are read from the child's output pipe, and the prompt and its error
+    # output go through unnamed files, so nothing a candidate writes to disk changes the report.
+    with tempfile.TemporaryDirectory(prefix="rc-", dir="/tmp") as child_tmp, \
+            tempfile.TemporaryFile() as stdin, tempfile.TemporaryFile() as stderr:
         env = {**os.environ, "RIGOR_NESTED": "1"}
-        answer = Path(scratch) / "answer.txt"
-        trace = args.trace if args.trace is not None else Path(scratch) / "events.jsonl"
-        log = Path(scratch) / "stderr.txt"
         if args.cli == "codex":
             command = [executable, "exec", "-s", "workspace-write" if args.write else "read-only",
-                       "-C", str(args.cd.resolve()), "--skip-git-repo-check", "--ephemeral", "--json", "-o", str(answer)]
+                       "-C", str(args.cd.resolve()), "--skip-git-repo-check", "--ephemeral", "--json"]
             model = os.environ.get("RIGOR_CODEX_MODEL")
             if model:
                 command += ["-m", model]
@@ -124,9 +118,7 @@ def run(args):
                        "--setting-sources", "user", "--strict-mcp-config"]
             instructions = [p.read_text() for p in (args.cd / "CLAUDE.md", args.cd / ".claude" / "CLAUDE.md") if p.is_file()]
             if instructions:
-                # An absolute path: Claude starts inside --cd, so a relative one would resolve twice.
-                (Path(scratch) / "CLAUDE.md").write_text("\n".join(instructions))
-                command += ["--append-system-prompt-file", str((Path(scratch) / "CLAUDE.md").resolve())]
+                command += ["--append-system-prompt", "\n".join(instructions)]
             model = os.environ.get("RIGOR_CLAUDE_MODEL")
             if model:
                 command += ["--model", model]
@@ -141,22 +133,38 @@ def run(args):
                 # path limit it silently falls back to the shared root.
                 env["CLAUDE_CODE_TMPDIR"] = child_tmp
             command += ["--settings", json.dumps(settings)]
-        # Events stream to the file as they arrive, so a killed run keeps what it already received.
-        fd = os.open(trace, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
-        with os.fdopen(fd, "w") as events, log.open("w") as errors:
-            child = subprocess.run(command, input=prompt, text=True, cwd=args.cd,
-                                   env=env, stdout=events, stderr=errors)
+        stdin.write(prompt.encode())
+        stdin.seek(0)
+        trace = os.fdopen(os.open(args.trace, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600), "wb") if args.trace else None
+        child = subprocess.Popen(command, stdin=stdin, stdout=subprocess.PIPE, stderr=stderr, cwd=args.cd, env=env)
+        events = lines(child.stdout, trace)
         try:
-            status, message = completion(args.cli, trace, answer)
+            status, message = completion(args.cli, events)
         except json.JSONDecodeError as error:
             status, message = 1, f"invalid event JSON: {error}\n{error.doc[:2000]}"
-        except (OSError, ValueError) as error:
+        except ValueError as error:
             status, message = 1, str(error)
+        for _ in events:  # keep reading so the child never blocks on a full pipe
+            pass
+        child.wait()
+        if trace:
+            trace.close()
         if child.returncode != 0:
+            stderr.seek(0)
             detail = message if status else f"Partial answer: {message.strip()}"
             return 1, "\n".join(part for part in (
-                f"{args.cli} exited {child.returncode}", detail, log.read_text().strip()) if part)
+                f"{args.cli} exited {child.returncode}", detail, stderr.read().decode(errors="replace").strip()) if part)
         return status, message
+
+
+def lines(stream, trace):
+    # Split on "\n" only: JSON strings may hold other line separators. Each line reaches the trace
+    # as it arrives, so a killed run keeps what it already received.
+    for line in stream:
+        if trace:
+            trace.write(line)
+            trace.flush()
+        yield line.decode(errors="replace")
 
 
 def main():
