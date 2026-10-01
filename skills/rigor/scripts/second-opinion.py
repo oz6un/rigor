@@ -8,6 +8,8 @@ import subprocess
 import sys
 import tempfile
 
+SCRATCH = Path.home() / ".rigor" / "tmp"
+
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -37,12 +39,17 @@ def parse_args():
             parser.error(f"trace folder does not exist: {args.trace.parent}")
         # Resolved once and kept, so a symlink the candidate swaps mid-run can't redirect the trace.
         args.trace = args.trace.resolve()
-        if args.write:
-            # By default the candidate can write --cd, /tmp and $TMPDIR. Folders are compared by
-            # identity, since one folder has several spellings (letter case, macOS firmlinks).
-            roots = [os.stat(p) for p in (args.cd, "/tmp", os.environ.get("TMPDIR") or "/tmp") if os.path.isdir(p)]
-            if any(os.path.samestat(os.stat(folder), root) for folder in args.trace.parents for root in roots):
-                parser.error("with --write, --trace must be outside --cd, /tmp and $TMPDIR, where the candidate can write")
+    if args.write:
+        # By default the candidate can write --cd, /tmp and $TMPDIR. Folders are compared by
+        # identity, since one folder has several spellings (letter case, macOS firmlinks).
+        roots = [os.stat(p) for p in (args.cd, "/tmp", os.environ.get("TMPDIR") or "/tmp") if os.path.isdir(p)]
+        def writable(path):
+            return any(os.path.samestat(os.stat(folder), root)
+                       for folder in path.parents if folder.exists() for root in roots)
+        if writable(SCRATCH / "x"):
+            parser.error(f"with --write, --cd must not contain {SCRATCH}, where the runner keeps what it reports")
+        if args.trace is not None and writable(args.trace):
+            parser.error("with --write, --trace must be outside --cd, /tmp and $TMPDIR, where the candidate can write")
     return args
 
 
@@ -91,11 +98,10 @@ def run(args):
     if executable is None:
         return 3, f"{args.cli} not installed; run this seat as a host subagent instead and say so in your report"
     prompt = sys.stdin.read()
-    # The answer, event stream and log live under the home folder, which neither CLI's sandbox can
-    # write, so a candidate can't rewrite what gets reported.
-    home_tmp = Path.home() / ".rigor" / "tmp"
-    home_tmp.mkdir(parents=True, exist_ok=True)
-    with tempfile.TemporaryDirectory(prefix="opinion-", dir=home_tmp) as scratch, \
+    # The answer and log live where neither CLI's sandbox can write (parse_args refuses a --cd that
+    # contains it), so a candidate can't rewrite what gets reported.
+    SCRATCH.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix="opinion-", dir=SCRATCH) as scratch, \
             tempfile.TemporaryDirectory(prefix="rc-", dir="/tmp") as child_tmp:
         env = {**os.environ, "RIGOR_NESTED": "1"}
         answer = Path(scratch) / "answer.txt"

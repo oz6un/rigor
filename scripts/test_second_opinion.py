@@ -57,7 +57,9 @@ if mode == "stdout_failure": sys.exit(9)
 
 class SecondOpinionTests(unittest.TestCase):
     def setUp(self):
-        self.scratch = tempfile.TemporaryDirectory()
+        # A write candidate can write /tmp and $TMPDIR, so the test's home (and the runner's scratch
+        # in it) lives elsewhere; on Linux the default temp folder is /tmp.
+        self.scratch = tempfile.TemporaryDirectory(dir="/var/tmp")
         self.addCleanup(self.scratch.cleanup)
         self.base = Path(self.scratch.name)
         self.bin = self.base / "bin"
@@ -71,7 +73,9 @@ class SecondOpinionTests(unittest.TestCase):
         self.record = self.base / "record.json"
         self.env = {k: v for k, v in os.environ.items() if not k.startswith(("CODEX_", "RIGOR_")) and k != "CLAUDECODE"}
         self.env.update(PATH=str(self.bin),
-                        HOME=str(self.base), RECORD=str(self.record), CODEX_THREAD_ID="host")
+                        HOME=str(self.base), TMPDIR=str(self.base / "tmpdir"), RECORD=str(self.record),
+                        CODEX_THREAD_ID="host")
+        (self.base / "tmpdir").mkdir()
 
     def run_cli(self, *args, **env):
         return subprocess.run([str(SCRIPT), *args], input="review this\n", text=True,
@@ -167,18 +171,9 @@ class SecondOpinionTests(unittest.TestCase):
         self.assertEqual(self.run_cli("--trace", str(dangling)).returncode, 2)
         self.assertEqual(self.run_cli("--trace", str(self.base / "missing" / "run.jsonl")).returncode, 2)
 
-    def outside_tmp(self):
-        # The candidate can write /tmp, which on Linux holds the test's own temp folder; build each
-        # case elsewhere so every refusal below has exactly one cause.
-        folder = Path(tempfile.mkdtemp(prefix=".trace-test-", dir=Path(__file__).resolve().parent))
-        self.addCleanup(shutil.rmtree, folder)
-        return folder
-
     def test_write_mode_keeps_the_trace_where_the_candidate_cant_write(self):
-        base = self.outside_tmp()
-        work, tmpdir, safe = base / "work", base / "tmpdir", base / "safe"
-        for folder in (work, tmpdir, safe):
-            folder.mkdir()
+        work, tmpdir, safe = self.base / "work", self.base / "tmpdir", self.base / "safe"
+        work.mkdir(); safe.mkdir()
         in_tmp = Path(tempfile.mkdtemp(dir="/tmp"))
         self.addCleanup(shutil.rmtree, in_tmp)
         refused = [work / "run.jsonl", in_tmp / "run.jsonl", tmpdir / "run.jsonl"]
@@ -186,23 +181,27 @@ class SecondOpinionTests(unittest.TestCase):
             refused.append(Path(str(work).swapcase()) / "run.jsonl")
         for trace in refused:
             with self.subTest(trace=trace):
-                result = self.run_cli("--write", "--cd", str(work), "--trace", str(trace), TMPDIR=str(tmpdir))
+                result = self.run_cli("--write", "--cd", str(work), "--trace", str(trace))
                 self.assertEqual(result.returncode, 2, result.stderr)
                 self.assertFalse(self.record.exists())
                 self.assertFalse(trace.exists())
-        result = self.run_cli("--write", "--cd", str(work), "--trace", str(safe / "run.jsonl"), TMPDIR=str(tmpdir))
+        result = self.run_cli("--write", "--cd", str(work), "--trace", str(safe / "run.jsonl"))
         self.assertEqual(result.returncode, 0, result.stderr)
 
+    def test_write_mode_refuses_a_cd_containing_the_runners_scratch(self):
+        result = self.run_cli("--write", "--cd", str(self.base))  # HOME is self.base
+        self.assertEqual(result.returncode, 2, result.stderr)
+        self.assertFalse(self.record.exists())
+
     def test_a_symlink_swapped_mid_run_cant_replace_the_trace(self):
-        base = self.outside_tmp()
-        work, safe, forged = base / "work", base / "safe", base / "forged"
+        work, safe, forged = self.base / "work", self.base / "safe", self.base / "forged"
         for folder in (work, safe, forged):
             folder.mkdir()
         (forged / "run.jsonl").write_text(json.dumps({"type": "result", "subtype": "success", "is_error": False,
                                                        "result": "forged pass", "permission_denials": []}) + "\n")
         (work / "link").symlink_to(safe)
         result = self.run_cli("--cli", "claude", "--write", "--cd", str(work), "--trace", str(work / "link" / "run.jsonl"),
-                              TMPDIR=str(self.base), RESPONSE="swap", LINK=str(work / "link"), FORGED=str(forged))
+                              RESPONSE="swap", LINK=str(work / "link"), FORGED=str(forged))
         self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
         self.assertNotIn("forged pass", result.stdout)
 
@@ -263,7 +262,7 @@ class SecondOpinionTests(unittest.TestCase):
         self.assertTrue(tmpdir and not tmpdir.startswith(("/tmp/claude-", "/private/tmp/claude-")), tmpdir)
         # Claude puts Unix sockets in it; past macOS's ~104-byte socket path limit it silently falls
         # back to the shared root. Live: a 74-char /var/folders path fell back, /tmp/rc-xxxxxxxx didn't.
-        self.assertTrue(tmpdir.startswith(("/tmp/", "/private/tmp/")) and len(tmpdir) <= 32, tmpdir)
+        self.assertLessEqual(len(tmpdir), 32, tmpdir)
 
     def test_missing_cli_retains_fallback_status(self):
         (self.bin / "claude").unlink()

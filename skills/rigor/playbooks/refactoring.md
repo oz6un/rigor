@@ -2,7 +2,7 @@
 
 You own the contract: the structure changes, the behavior doesn't. Feature adds behavior and Bug fix corrects it; this playbook does neither.
 
-If the cleanup turns up a missing feature or a real bug, split it out and ship the structural change first, held against the pinned behavior. When the current shape itself is the problem, or the user asks to rethink it from scratch, use the Redesign playbook (`playbooks/redesign.md`). Large or cross-cutting structural work toward a known shape goes to the `figure-it-out` skill; this playbook covers focused to medium-sized changes.
+If the cleanup turns up a missing feature or a real bug, split it out and ship the structural change first, held against the pinned behavior. When the current shape itself is the problem, or the user asks to rethink it from scratch, use the Redesign playbook (`playbooks/redesign.md`), unless it sent you here. Large or cross-cutting structural work toward a known shape goes to the `figure-it-out` skill; this playbook covers focused to medium-sized changes.
 
 1. Pin the behavior first. Run `how` over the affected subsystem to learn its contract, then pin current behavior before any structure moves. If existing tests already exercise it through the entry point callers use, name them as the pin. Otherwise write a characterization test, snapshot, or equivalence harness there, not against internals or an API you're about to remove. Type checks and lint are not a pin.
 2. Name the structure the code is missing (the `model-the-domain` principle). Leave plain code alone when its shape is already clear and local. The reshape has to remove branches or invalid states, not add indirection.
