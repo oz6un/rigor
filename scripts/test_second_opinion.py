@@ -1,5 +1,6 @@
 import json
 import os
+import resource
 from pathlib import Path
 import shutil
 import signal
@@ -17,8 +18,9 @@ args = sys.argv[1:]
 cli = pathlib.Path(sys.argv[0]).name
 pathlib.Path(os.environ["RECORD"]).write_text(json.dumps({
     "cli": cli, "args": args, "cwd": os.getcwd(), "prompt": sys.stdin.read(),
-    "nested": os.environ.get("RIGOR_NESTED"), "tmpdir": os.environ.get("CLAUDE_CODE_TMPDIR"),
-    "appended": args[args.index("--append-system-prompt") + 1] if "--append-system-prompt" in args else None}))
+    "nested": os.environ.get("RIGOR_NESTED"), "tmpdir": os.environ.get("CLAUDE_CODE_TMPDIR"), "pid": os.getpid(),
+    "appended": (pathlib.Path(args[args.index("--append-system-prompt-file") + 1]).read_text()
+                 if "--append-system-prompt-file" in args else None)}))
 mode = os.environ.get("RESPONSE", "success")
 if cli == "codex":
     events = [{"type": "item.completed", "item": {"type": "agent_message", "text": "checking"}},
@@ -41,6 +43,13 @@ if mode == "separators":  # valid JSON may carry these unescaped
     events[-1]["result"] = "line\u2028one\x85two"
     for event in events: print(json.dumps(event, ensure_ascii=False))
     sys.exit(0)
+if mode == "flood":  # a bad line, then more than a pipe buffer holds
+    print("not json")
+    for _ in range(5000): print(json.dumps(events[0]))
+if mode == "long":
+    for _ in range(5000): print(json.dumps(events[0]))
+    for event in events: print(json.dumps(event))
+    sys.exit(0)
 if mode == "slow":
     print(json.dumps(events[0]), flush=True)
     import time; time.sleep(30)
@@ -61,11 +70,11 @@ if mode == "stdout_failure": sys.exit(9)
 
 class SecondOpinionTests(unittest.TestCase):
     def setUp(self):
-        # A write candidate can write /tmp and $TMPDIR, so the test's home (and the runner's scratch
-        # in it) lives elsewhere; on Linux the default temp folder is /tmp.
+        # A write candidate can write /tmp and $TMPDIR, so traces the runner should accept live
+        # elsewhere; on Linux the default temp folder is /tmp.
         self.scratch = tempfile.TemporaryDirectory(dir="/var/tmp")
         self.addCleanup(self.scratch.cleanup)
-        self.base = Path(self.scratch.name)
+        self.base = Path(self.scratch.name).resolve()  # macOS's /var is a symlink to /private/var
         self.bin = self.base / "bin"
         self.bin.mkdir()
         for name, target in (("python3", sys.executable), ("bash", shutil.which("bash")), ("dirname", shutil.which("dirname"))):
@@ -178,12 +187,15 @@ class SecondOpinionTests(unittest.TestCase):
     def test_write_mode_keeps_the_trace_where_the_candidate_cant_write(self):
         work, tmpdir, safe = self.base / "work", self.base / "tmpdir", self.base / "safe"
         work.mkdir(); safe.mkdir()
-        in_tmp = Path(tempfile.mkdtemp(dir="/tmp"))
+        in_tmp = Path(tempfile.mkdtemp(dir="/tmp")).resolve()  # the real path, so only the /tmp rule applies
         self.addCleanup(shutil.rmtree, in_tmp)
-        (work / "link").symlink_to(safe)  # a folder the candidate can re-point
+        # Symlinks are refused outright: one the candidate can re-point, even mid-chain, would
+        # redirect whoever reads the trace later.
+        (work / "link").symlink_to(safe)
         (safe / "into-tmp").symlink_to(in_tmp)
+        (safe / "entry").symlink_to(work / "link")
         refused = [work / "run.jsonl", in_tmp / "run.jsonl", tmpdir / "run.jsonl",
-                   work / "link" / "run.jsonl", safe / "into-tmp" / "run.jsonl"]
+                   work / "link" / "run.jsonl", safe / "into-tmp" / "run.jsonl", safe / "entry" / "run.jsonl"]
         if Path(str(work).swapcase()).is_dir():  # a case-insensitive file system
             refused.append(Path(str(work).swapcase()) / "run.jsonl")
         for trace in refused:
@@ -192,26 +204,52 @@ class SecondOpinionTests(unittest.TestCase):
                 self.assertEqual(result.returncode, 2, result.stderr)
                 self.assertFalse(self.record.exists())
                 self.assertFalse(trace.exists())
-        result = self.run_cli("--write", "--cd", str(work), "--trace", str(safe / "run.jsonl"))
+        result = self.run_cli("--write", "--cd", str(work), "--trace", str(work / ".." / "safe" / "run.jsonl"))
         self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue((safe / "run.jsonl").exists())
 
     def test_events_split_only_on_newlines(self):
         result = self.run_cli("--cli", "claude", RESPONSE="separators")
         self.assertEqual((result.returncode, result.stdout), (0, "line\u2028one\x85two\n"), result.stderr)
 
-    def test_a_killed_run_keeps_the_events_it_already_received(self):
+    def test_a_killed_run_keeps_its_events_and_stops_its_child(self):
         trace = self.base / "killed.jsonl"
-        runner = subprocess.Popen([str(SCRIPT), "--cli", "claude", "--trace", str(trace)], stdin=subprocess.PIPE,
-                                  stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-                                  env={**self.env, "RESPONSE": "slow"}, start_new_session=True)
+        before = set(Path("/tmp").glob("rc-*"))
+        runner = subprocess.Popen([str(SCRIPT), "--cli", "claude", "--write", "--trace", str(trace)], stdin=subprocess.PIPE,
+                                  stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, cwd=self.base / "tmpdir",
+                                  env={**self.env, "RESPONSE": "slow"})
         runner.stdin.write(b"review this\n"); runner.stdin.close()
         for _ in range(100):
             if trace.exists() and trace.stat().st_size:
                 break
             time.sleep(0.1)
-        os.killpg(runner.pid, signal.SIGTERM)  # the runner and the fake CLI with it
-        runner.wait()
+        self.assertTrue(trace.stat().st_size)  # readable while the run is still going
+        runner.terminate()
+        self.assertEqual(runner.wait(timeout=10), 143)
         self.assertEqual(json.loads(trace.read_text())["type"], "assistant")
+        with self.assertRaises(ProcessLookupError):  # the fake CLI was stopped too
+            os.kill(json.loads(self.record.read_text())["pid"], 0)
+        self.assertEqual(set(Path("/tmp").glob("rc-*")) - before, set())
+
+    def test_a_bad_line_before_a_long_stream_fails_without_hanging(self):
+        trace = self.base / "flood.jsonl"
+        result = subprocess.run([str(SCRIPT), "--cli", "claude", "--trace", str(trace)], input="review this\n",
+                                text=True, capture_output=True, env={**self.env, "RESPONSE": "flood"}, timeout=30)
+        self.assertEqual(result.returncode, 1, result.stderr)
+        self.assertIn("invalid event JSON", result.stderr)
+        self.assertEqual(len(trace.read_text().splitlines()), 5003)
+
+    def test_a_trace_that_cant_be_written_fails_the_run_but_lets_it_finish(self):
+        def small_files():  # writes past 64 KB fail with EFBIG
+            resource.setrlimit(resource.RLIMIT_FSIZE, (65536, 65536))
+            signal.signal(signal.SIGXFSZ, signal.SIG_IGN)
+        trace = self.base / "full.jsonl"
+        result = subprocess.run([str(SCRIPT), "--cli", "claude", "--trace", str(trace)], input="review this\n",
+                                text=True, capture_output=True, env={**self.env, "RESPONSE": "long"},
+                                preexec_fn=small_files, timeout=30)
+        self.assertEqual(result.returncode, 1, result.stderr)
+        self.assertIn("trace incomplete", result.stderr)
+        self.assertIn("review complete", result.stderr)  # the run itself finished
 
     def test_codex_answer_is_its_last_message_and_none_is_incomplete(self):
         result = self.run_cli("--cli", "codex")

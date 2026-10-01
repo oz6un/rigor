@@ -4,9 +4,11 @@ import json
 import os
 from pathlib import Path
 import shutil
+import signal
 import subprocess
 import sys
 import tempfile
+
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -30,23 +32,23 @@ def parse_args():
     if sys.stdin.isatty():
         parser.error("pipe the prompt on stdin")
     if args.trace is not None:
-        args.trace = args.trace.absolute()
+        args.trace = Path(os.path.abspath(args.trace))
         if os.path.lexists(args.trace):
             parser.error(f"trace already exists, never overwritten: {args.trace}")
         if not args.trace.parent.is_dir():
             parser.error(f"trace folder does not exist: {args.trace.parent}")
-        if args.write and writable_by_candidate(args.trace, args.cd):
-            parser.error("with --write, --trace must be outside --cd, /tmp and $TMPDIR, where the candidate can write")
+        if args.write and (args.trace.parent.resolve() != args.trace.parent or writable_by_candidate(args.trace, args.cd)):
+            parser.error("with --write, --trace must be a real path (no symlinks) outside --cd, /tmp and $TMPDIR, "
+                         "where the candidate can write")
     return args
 
 
 def writable_by_candidate(trace, cd):
-    # By default a write candidate can write --cd, /tmp and $TMPDIR. A trace there, or reached
-    # through a folder there, could be rewritten before anyone reads it. Folders are compared by
-    # identity, since one folder has several spellings (letter case, symlinks, macOS firmlinks).
+    # By default a write candidate can write --cd, /tmp and $TMPDIR, and could rewrite a trace
+    # there before anyone reads it. Folders are compared by identity, since one folder has several
+    # spellings (letter case, macOS firmlinks).
     roots = [os.stat(p) for p in (cd, "/tmp", os.environ.get("TMPDIR") or "/tmp") if os.path.isdir(p)]
-    folders = [*trace.parents, *trace.resolve().parents]
-    return any(os.path.samestat(os.stat(folder), root) for folder in folders for root in roots)
+    return any(os.path.samestat(os.stat(folder), root) for folder in trace.parents for root in roots)
 
 
 def completion(cli, events):
@@ -54,12 +56,18 @@ def completion(cli, events):
     terminal = None
     problem = ""
     text = ""
-    for line in events:
+    invalid = ""
+    for line in events:  # read to the end even after a bad line, so the child never blocks on the pipe
         if not line.strip():
             continue
-        event = json.loads(line)
+        try:
+            event = json.loads(line)
+        except json.JSONDecodeError as error:
+            invalid = invalid or f"invalid event JSON: {error}\n{line[:2000]}"
+            continue
         if not isinstance(event, dict):
-            raise ValueError("expected JSON event objects")
+            invalid = invalid or "expected JSON event objects"
+            continue
         if cli == "claude" and event.get("type") == "result":
             result = event
         if cli == "codex":
@@ -73,6 +81,8 @@ def completion(cli, events):
                 problem = str(error.get("message", "")) if isinstance(error, dict) else str(error)
             elif event.get("type") == "error":
                 problem = str(event.get("message", ""))
+    if invalid:
+        return 1, invalid
     if cli == "codex":
         if terminal == "turn.failed":
             return 1, f"Codex reported a failed run: {problem}"
@@ -96,10 +106,10 @@ def run(args):
     if executable is None:
         return 3, f"{args.cli} not installed; run this seat as a host subagent instead and say so in your report"
     prompt = sys.stdin.read()
-    # The verdict and answer are read from the child's output pipe, and the prompt and its error
-    # output go through unnamed files, so nothing a candidate writes to disk changes the report.
-    with tempfile.TemporaryDirectory(prefix="rc-", dir="/tmp") as child_tmp, \
-            tempfile.TemporaryFile() as stdin, tempfile.TemporaryFile() as stderr:
+    # The verdict and answer are read from the child's output pipe, and everything else passes
+    # through unnamed files, so nothing a candidate writes to disk changes the report.
+    with tempfile.TemporaryDirectory(prefix="rc-", dir="/tmp") as child_tmp, tempfile.TemporaryFile() as stdin, \
+            tempfile.TemporaryFile() as stderr, tempfile.TemporaryFile() as instructions:
         env = {**os.environ, "RIGOR_NESTED": "1"}
         if args.cli == "codex":
             command = [executable, "exec", "-s", "workspace-write" if args.write else "read-only",
@@ -116,9 +126,11 @@ def run(args):
             command = [executable, "-p", "--permission-mode", "acceptEdits" if args.write else "plan",
                        "--no-session-persistence", "--output-format", "stream-json", "--verbose",
                        "--setting-sources", "user", "--strict-mcp-config"]
-            instructions = [p.read_text() for p in (args.cd / "CLAUDE.md", args.cd / ".claude" / "CLAUDE.md") if p.is_file()]
-            if instructions:
-                command += ["--append-system-prompt", "\n".join(instructions)]
+            text = "\n".join(p.read_text() for p in (args.cd / "CLAUDE.md", args.cd / ".claude" / "CLAUDE.md") if p.is_file())
+            if text:
+                instructions.write(text.encode())
+                instructions.seek(0)
+                command += ["--append-system-prompt-file", f"/dev/fd/{instructions.fileno()}"]
             model = os.environ.get("RIGOR_CLAUDE_MODEL")
             if model:
                 command += ["--model", model]
@@ -135,39 +147,44 @@ def run(args):
             command += ["--settings", json.dumps(settings)]
         stdin.write(prompt.encode())
         stdin.seek(0)
-        trace = os.fdopen(os.open(args.trace, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600), "wb") if args.trace else None
-        child = subprocess.Popen(command, stdin=stdin, stdout=subprocess.PIPE, stderr=stderr, cwd=args.cd, env=env)
-        events = lines(child.stdout, trace)
+        trace = open(args.trace, "xb", buffering=0, opener=lambda path, flags: os.open(path, flags, 0o600)) if args.trace else None
+        trace_error = []
+        child = subprocess.Popen(command, stdin=stdin, stdout=subprocess.PIPE, stderr=stderr, cwd=args.cd,
+                                 env=env, pass_fds=(instructions.fileno(),))
         try:
-            status, message = completion(args.cli, events)
-        except json.JSONDecodeError as error:
-            status, message = 1, f"invalid event JSON: {error}\n{error.doc[:2000]}"
-        except ValueError as error:
-            status, message = 1, str(error)
-        for _ in events:  # keep reading so the child never blocks on a full pipe
-            pass
-        child.wait()
-        if trace:
-            trace.close()
+            status, message = completion(args.cli, lines(child.stdout, trace, trace_error))
+            child.wait()
+        finally:
+            if child.poll() is None:  # interrupted: don't leave the candidate running
+                child.kill()
+                child.wait()
+            if trace:
+                trace.close()
         if child.returncode != 0:
             stderr.seek(0)
             detail = message if status else f"Partial answer: {message.strip()}"
             return 1, "\n".join(part for part in (
                 f"{args.cli} exited {child.returncode}", detail, stderr.read().decode(errors="replace").strip()) if part)
+        if trace_error:
+            return 1, f"trace incomplete, {trace_error[0]}; the run itself said: {message.strip()}"
         return status, message
 
 
-def lines(stream, trace):
-    # Split on "\n" only: JSON strings may hold other line separators. Each line reaches the trace
-    # as it arrives, so a killed run keeps what it already received.
+def lines(stream, trace, trace_error):
+    # Split on "\n" only: JSON strings may hold other line separators. The trace is unbuffered, so
+    # each line reaches it as it arrives.
     for line in stream:
-        if trace:
-            trace.write(line)
-            trace.flush()
+        if trace and not trace_error:
+            try:
+                trace.write(line)
+            except OSError as error:
+                trace_error.append(str(error))
         yield line.decode(errors="replace")
 
 
 def main():
+    # On SIGTERM, unwind like Ctrl-C: stop the child CLI and remove temp files.
+    signal.signal(signal.SIGTERM, lambda *_: sys.exit(143))
     args = parse_args()
     try:
         status, message = run(args)

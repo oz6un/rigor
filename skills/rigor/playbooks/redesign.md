@@ -9,4 +9,4 @@ You own the rethink: a subsystem, or a whole system, rebuilt the way you'd build
 5. **Build from the contract, test first.** Turn each requirement into a test at the entry point callers use. Build the new version beside the old one, then run the same inputs through both, on the real environment as well as in tests (fakes can't show what the old code knew about its environment), and diff the outputs. A difference no pruned requirement explains is a requirement the contract missed: add it with evidence, and check the other designs against it.
 6. **Cut over and delete the old version** in the same change, with no compatibility layer (the `migrate-callers-then-delete-legacy-apis` principle). Then run the Opening a PR playbook (`playbooks/opening-a-pr.md`).
 
-**Reply:** the contract and what was pruned, the designs and the decision, the parity evidence, and what the old version knew that the contract had to add.
+**Reply:** the contract and what was pruned, the designs and the decision, and for a rewrite, the parity evidence and what the old version knew that the contract had to add.
