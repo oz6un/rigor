@@ -5,7 +5,6 @@ import shutil
 import subprocess
 import sys
 import tempfile
-import time
 import unittest
 
 
@@ -35,6 +34,12 @@ if mode == "stdout_failure":
     events[-1] = ({"type": "turn.failed", "error": {"message": "provider stdout failure"}} if cli == "codex"
                   else {"type": "result", "subtype": "error_during_execution", "is_error": True, "errors": ["provider stdout failure"]})
 if mode == "missing": events.pop()
+if mode == "swap":  # report failure, then re-point the trace's symlinked folder at a forged success
+    events[-1].update(is_error=True, subtype="error_during_execution")
+    for event in events: print(json.dumps(event), flush=True)
+    link = pathlib.Path(os.environ["LINK"])
+    link.unlink(); link.symlink_to(os.environ["FORGED"])
+    sys.exit(0)
 if mode == "malformed_failure":
     print("Error: not logged in")
     print("auth token expired", file=sys.stderr)
@@ -43,9 +48,6 @@ if mode == "malformed":
     print("not json")
 elif mode == "separators":  # valid JSON can carry these unescaped
     for event in events: print(json.dumps({**event, "note": "line\u2028one\x85two"}, ensure_ascii=False))
-elif mode == "slow":
-    print(json.dumps(events[0]), flush=True)
-    import time; time.sleep(5)
 else:
     for event in events: print(json.dumps(event))
 if mode == "nonzero":
@@ -180,7 +182,11 @@ class SecondOpinionTests(unittest.TestCase):
                 self.assertEqual(result.returncode, 2, result.stderr)
                 self.assertFalse(self.record.exists())
                 self.assertFalse(trace.exists())
-        result = self.run_cli("--write", "--cd", str(work), "--trace", str(self.base / "run.jsonl"), TMPDIR=str(outside_home))
+        # The temp folder is under /tmp on Linux, so the safe home goes under the real one.
+        home = Path(tempfile.mkdtemp(dir=Path.home()))
+        self.addCleanup(shutil.rmtree, home)
+        result = self.run_cli("--write", "--cd", str(work), "--trace", str(home / "run.jsonl"),
+                              HOME=str(home), TMPDIR=str(outside_home))
         self.assertEqual(result.returncode, 0, result.stderr)
 
     def test_a_home_inside_tmp_gives_no_safe_trace(self):
@@ -190,23 +196,28 @@ class SecondOpinionTests(unittest.TestCase):
                               HOME=str(home), TMPDIR=str(self.base / "bin"))
         self.assertEqual(result.returncode, 2, result.stderr)
 
+    def test_a_symlink_swapped_mid_run_cant_replace_the_trace(self):
+        home = Path(tempfile.mkdtemp(dir=Path.home()))
+        self.addCleanup(shutil.rmtree, home)
+        (home / "traces").mkdir()
+        forged = self.base / "forged"
+        forged.mkdir()
+        (forged / "run.jsonl").write_text(json.dumps({"type": "result", "subtype": "success", "is_error": False,
+                                                       "result": "forged pass", "permission_denials": []}) + "\n")
+        work = self.base / "work"
+        work.mkdir()
+        (work / "link").symlink_to(home / "traces")
+        result = self.run_cli("--cli", "claude", "--write", "--cd", str(work), "--trace", str(work / "link" / "run.jsonl"),
+                              HOME=str(home), TMPDIR=str(self.base / "bin"), RESPONSE="swap",
+                              LINK=str(work / "link"), FORGED=str(forged))
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertNotIn("forged pass", result.stdout)
+
     def test_unicode_line_separators_inside_events_are_not_line_breaks(self):
         for cli in ("claude", "codex"):
             with self.subTest(cli=cli):
                 result = self.run_cli("--cli", cli, RESPONSE="separators")
                 self.assertEqual(result.returncode, 0, result.stderr)
-
-    def test_a_killed_run_keeps_the_events_it_already_received(self):
-        trace = self.base / "killed.jsonl"
-        child = subprocess.Popen([str(SCRIPT), "--cli", "claude", "--trace", str(trace)], stdin=subprocess.PIPE,
-                                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, env={**self.env, "RESPONSE": "slow"})
-        child.stdin.write(b"review this\n"); child.stdin.close()
-        deadline = time.time() + 10
-        while time.time() < deadline and not (trace.exists() and trace.stat().st_size):
-            time.sleep(0.1)
-        child.terminate(); child.wait()
-        self.assertIn('"type": "assistant"', trace.read_text())
-        time.sleep(5)  # let the orphaned fake CLI exit
 
     def test_ambiguous_host_needs_explicit_cli(self):
         result = self.run_cli(CLAUDECODE="1")

@@ -38,8 +38,9 @@ def parse_args():
             parser.error(f"trace folder does not exist: {args.trace.parent}")
         # With default sandbox settings, neither CLI can write the home folder outside --cd, but
         # Codex can write /tmp and $TMPDIR, wherever that is.
-        trace = args.trace.resolve()
-        writable = (args.cd, Path("/tmp"), Path(os.environ.get("TMPDIR", "/tmp")))
+        # Resolved once and kept, so a symlink the candidate swaps mid-run can't redirect the trace.
+        args.trace = trace = args.trace.resolve()
+        writable = (args.cd, Path("/tmp"), Path(os.environ.get("TMPDIR") or "/tmp"))
         if args.write and (Path.home().resolve() not in trace.parents or
                            any(root.resolve() in trace.parents for root in writable)):
             parser.error("with --write, --trace must be under your home folder, outside --cd, /tmp and $TMPDIR")
