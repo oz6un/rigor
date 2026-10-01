@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 import argparse
+import contextlib
 import json
 import os
 from pathlib import Path
 import shutil
+import signal
 import subprocess
 import sys
 import tempfile
@@ -13,7 +15,9 @@ def parse_args():
     parser = argparse.ArgumentParser(
         prog="second-opinion",
         description="Run a stdin prompt through the other CLI; print its final answer.",
-        epilog="Exit codes: 0 completed, 1 CLI/output failure, 2 usage, 3 missing CLI, 4 incomplete run (no completion reported, or no answer).")
+        epilog="RIGOR_CODEX_MODEL and RIGOR_CLAUDE_MODEL pick the model. Exit codes: 0 completed, "
+               "1 CLI/output failure, 2 usage, 3 missing CLI, 4 incomplete run (no completion reported, or no answer), "
+               "143 stopped by SIGTERM.")
     parser.add_argument("--cli", choices=("codex", "claude"), help="explicit target CLI")
     parser.add_argument("--write", action="store_true", help="allow edits and sandboxed commands; use a separate worktree")
     parser.add_argument("--cd", type=Path, default=Path.cwd(), help="working directory")
@@ -81,8 +85,10 @@ def run(args):
     # candidate can't rewrite what gets reported. The child's own temp dir is a separate one.
     home_tmp = Path.home() / ".rigor" / "tmp"
     home_tmp.mkdir(parents=True, exist_ok=True)
-    with tempfile.TemporaryDirectory(prefix="opinion-", dir=home_tmp) as scratch, \
-            tempfile.TemporaryDirectory(prefix="rc-", dir="/tmp") as child_tmp:
+    # Only a Claude write run needs its own temp root, kept short: Claude puts sockets in it
+    # (macOS ~104-byte limit).
+    claude_tmp = tempfile.TemporaryDirectory(prefix="rc-", dir="/tmp") if args.cli == "claude" and args.write else contextlib.nullcontext()
+    with tempfile.TemporaryDirectory(prefix="opinion-", dir=home_tmp) as scratch, claude_tmp as child_tmp:
         env = {**os.environ, "RIGOR_NESTED": "1"}
         answer = Path(scratch) / "answer.txt"
         trace = args.trace if args.trace is not None else Path(scratch) / "events.jsonl"
@@ -137,6 +143,9 @@ def run(args):
 
 
 def main():
+    # On SIGTERM, raise SystemExit: subprocess.run then kills the CLI (tools Codex started keep
+    # running either way) and the temp folders are removed.
+    signal.signal(signal.SIGTERM, lambda *_: sys.exit(143))
     args = parse_args()
     try:
         status, message = run(args)

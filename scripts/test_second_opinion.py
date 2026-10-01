@@ -1,10 +1,13 @@
+import contextlib
 import json
 import os
 from pathlib import Path
 import shutil
+import signal
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 
 
@@ -15,7 +18,7 @@ args = sys.argv[1:]
 cli = pathlib.Path(sys.argv[0]).name
 pathlib.Path(os.environ["RECORD"]).write_text(json.dumps({
     "cli": cli, "args": args, "cwd": os.getcwd(), "prompt": sys.stdin.read(),
-    "nested": os.environ.get("RIGOR_NESTED"), "tmpdir": os.environ.get("CLAUDE_CODE_TMPDIR"),
+    "nested": os.environ.get("RIGOR_NESTED"), "tmpdir": os.environ.get("CLAUDE_CODE_TMPDIR"), "pid": os.getpid(),
     "appended": (pathlib.Path(args[args.index("--append-system-prompt-file") + 1]).read_text()
                  if "--append-system-prompt-file" in args else None)}))
 mode = os.environ.get("RESPONSE", "success")
@@ -34,6 +37,9 @@ if mode == "stdout_failure":
     events[-1] = ({"type": "turn.failed", "error": {"message": "provider stdout failure"}} if cli == "codex"
                   else {"type": "result", "subtype": "error_during_execution", "is_error": True, "errors": ["provider stdout failure"]})
 if mode == "missing": events.pop()
+if mode == "slow":
+    print(json.dumps(events[0]), flush=True)
+    import time; time.sleep(30)
 if mode == "malformed_failure":
     print("Error: not logged in")
     print("auth token expired", file=sys.stderr)
@@ -212,6 +218,30 @@ class SecondOpinionTests(unittest.TestCase):
         self.assertEqual(args[args.index("--tools") + 1], "Bash,Read,Edit,Write,Glob,Grep,Agent,TodoWrite")
         tmpdir = json.loads(self.record.read_text())["tmpdir"]
         self.assertTrue(tmpdir and not tmpdir.startswith(("/tmp/claude-", "/private/tmp/claude-")), tmpdir)
+        self.assertLessEqual(len(tmpdir), 32, tmpdir)  # live: a 74-char path fell back to the shared root
+        self.assertFalse(Path(tmpdir).exists())
+
+    def test_a_terminated_run_stops_its_cli_and_cleans_up(self):
+        runner = subprocess.Popen([str(SCRIPT), "--cli", "codex"], stdin=subprocess.PIPE, stdout=subprocess.DEVNULL,
+                                  stderr=subprocess.DEVNULL, env={**self.env, "RESPONSE": "slow"})
+        self.addCleanup(lambda: runner.poll() is None and runner.kill())
+        runner.stdin.write(b"review this\n"); runner.stdin.close()
+        for _ in range(100):
+            with contextlib.suppress(FileNotFoundError, json.JSONDecodeError):
+                recorded = json.loads(self.record.read_text())
+                break
+            time.sleep(0.1)
+        else:
+            self.fail("the fake CLI never started")
+        def stop_cli():
+            with contextlib.suppress(ProcessLookupError):
+                os.kill(recorded["pid"], signal.SIGKILL)
+        self.addCleanup(stop_cli)
+        runner.terminate()
+        self.assertEqual(runner.wait(timeout=10), 143)
+        with self.assertRaises(ProcessLookupError):
+            os.kill(recorded["pid"], 0)
+        self.assertEqual(list((self.base / ".rigor" / "tmp").iterdir()), [])
 
     def test_missing_cli_retains_fallback_status(self):
         (self.bin / "claude").unlink()
