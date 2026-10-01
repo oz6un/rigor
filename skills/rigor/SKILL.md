@@ -22,6 +22,7 @@ Scale to the task. For a change of a few lines with an obvious approach, do it y
 | `playbooks/bug-fix.md` | Reproduce a defect, find the root cause, fix it |
 | `playbooks/feature.md` | New or changed behavior |
 | `playbooks/refactoring.md` | Structure changes that preserve behavior |
+| `playbooks/redesign.md` | Rethink a subsystem or system from scratch: "how would you build it today?" |
 | `playbooks/perf-issue.md` | A measured slowdown, fixed against a baseline |
 | `playbooks/hillclimb.md` | Push one metric toward a target, one measured commit at a time |
 | `playbooks/runtime-forensics.md` | Diagnose a live symptom (leak, idle CPU, glitch); diagnosis only |
@@ -41,7 +42,7 @@ Scale to the task. For a change of a few lines with an obvious approach, do it y
 | `playbooks/worktree-cleanup.md` | Reclaim disk from merged worktrees and old simulators |
 | `playbooks/opening-a-pr.md` | The last step of every playbook that changes code |
 
-No playbook fits, or the work is large and cross-cutting: use the `figure-it-out` skill.
+No playbook fits, or the work is large and cross-cutting: use the `figure-it-out` skill (a from-scratch rethink is the Redesign playbook).
 
 ## Supporting skills
 
